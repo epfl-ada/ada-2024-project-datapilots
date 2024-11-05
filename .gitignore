@@ -4,3 +4,14 @@ src/data/RateBeer/
 
 *.tar.gz
 *.txt.gz
+
+__pycache__/
+*.pyc
+
+env/
+venv/
+
+
+*.tmp
+*.log
+*.bak
