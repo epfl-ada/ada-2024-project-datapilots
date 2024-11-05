@@ -44,16 +44,32 @@ pip install -r pip_requirements.txt
 Tell us how the code is arranged, any explanations goes here.
 
 
+### Data Setup Instructions
+
+This project requires two data files: BeerAdvocate.tar.gz and RateBeer.tar.gz. Due to the large size of these files, they are hosted externally on Google Drive and need to be downloaded and extracted locally. The following steps will guide you through the data setup process.
+
+1) Run the download_files.py script to download BeerAdvocate.tar.gz and RateBeer.tar.gz to your local machine.
+    python src/data/download_files.py
+
+2) After downloading, each .tar.gz file needs to be extracted into a separate folder.
+To extract BeerAdvocate.tar.gz, run the extract_beer_advocate.py script:
+    python src/data/extract_beer_advocate.py
+
+This will extract the contents of BeerAdvocate.tar.gz into a folder called BeerAdvocate
+
+To extract RateBeer.tar.gz, run the extract_rate_beer.py script:
+    python src/data/extract_rate_beer.py
+
+This will extract the contents of RateBeer.tar.gz into a folder called RateBeer.
+
 
 ## Project Structure
 
-The directory structure of new project looks like this:
+After completing these steps, your directory structure should look like this:
 
 ```
-├── data                        <- Project data files
-│
 ├── src                         <- Source code
-│   ├── data                            <- Data directory
+│   ├── data                            <- Project data files and data loader
 │   ├── models                          <- Model directory
 │   ├── utils                           <- Utility directory
 │   ├── scripts                         <- Shell scripts

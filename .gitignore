@@ -1,0 +1,6 @@
+src/data/downloaded_files/
+src/data/BeerAdvocate/
+src/data/RateBeer/
+
+*.tar.gz
+*.txt.gz
