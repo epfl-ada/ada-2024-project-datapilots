@@ -18,9 +18,7 @@
 ### Questions for TAs (optional):
 
 
-
-
-## Quickstart
+## Quickstart
 
 ```bash
 # clone project
