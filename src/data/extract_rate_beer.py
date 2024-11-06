@@ -3,12 +3,14 @@ import gzip
 import shutil
 import os
 
-# Get the path to the parent directory of the 'src' folder
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# Get the path to the project root directory (move up two levels from src/data)
+base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-# Define the paths for the download directory and the RateBeer extraction directory
+# Define the paths for the data directory and the download directory
 data_dir = os.path.join(base_dir, 'data')
 download_dir = os.path.join(data_dir, 'downloaded_files')
+
+# Define the extraction directory at the root data level
 rate_beer_extract_dir = os.path.join(data_dir, "RateBeer")
 
 # Ensure the extraction directory exists

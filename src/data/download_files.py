@@ -5,8 +5,8 @@ import os
 beer_advocate_file_id = "1IqcAJtYrDB1j40rBY5M-PGp6KNX-E3xq"  
 rate_beer_file_id = "1vt-CTz6Ni8fPTIkHehW9Mm0RPMpvkH3a"          
 
-# Define the path to the project root directory
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# Define the path to the project root directory (move up two levels from src/data)
+base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 # Define the main data directory and download directory at the project root level
 data_dir = os.path.join(base_dir, 'data')
@@ -28,4 +28,3 @@ gdown.download(f"https://drive.google.com/uc?id={rate_beer_file_id}", rate_beer_
 print(f"Downloaded RateBeer.tar.gz to {rate_beer_download_path}")
 
 print("Files have been downloaded.")
-
