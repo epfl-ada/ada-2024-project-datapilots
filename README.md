@@ -26,7 +26,7 @@ git clone https://github.com/epfl-ada/ada-2024-project-datapilots.git
 cd <project repo>
 
 # [OPTIONAL] create conda environment
-conda create -n <env_name> python=3.11
+conda create -y -n <env_name> python=3.11 scipy pandas numpy matplotlib=3.7.2
 conda activate <env_name>
 
 
