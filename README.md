@@ -6,48 +6,89 @@ Taste preferences for food and drinks often go beyond the intrinsic characterist
 
 ### Research questions:
 **1) Cultural influence on beer preferences**
+
 a) How do beer style preferences differ between countries, and are these regional preferences stable over time?
+
 b) Does the significance of specific beer attributes in determining one’s liking of a given beer vary by country?
+
+
 **2) Location-related biases in ratings**
+
 a) Are users from certain countries more generous or more critical in their ratings compared to users from other countries?
+
 b) Do users show a bias by rating domestic beers higher than foreign ones?
+
+
 **3) Other biases in ratings**
+
 a) Do seasonal changes affect how different beer styles are rated?
+
 b) Do users become more critical with experience?
+
 
 ### Methods:
 **Cultural influence on beer preferences**
-<u>Beer style preferences</u>
+
+*Beer style preferences*
+
 We employ clustering techniques to identify the most popular beer styles in each country. Additionally, we  use the time information contained in beer reviews to determine whether regional beer style preferences remain stable over time—supporting the hypothesis that they are influenced by culture—or if they fluctuate, suggesting other contributing factors.
-<u>Importance of specific beer attributes</u>
+
+*Importance of specific beer attributes*
+
 To assess the overall importance of various beer attributes in determining the final rating, we use linear regression with attribute ratings as features and the final rating as the outcome variable across all countries combined. We then compare the coefficients of each attribute to evaluate their relative influence. To understand how the importance of these attributes varies between countries, we repeat this analysis separately for each country and examine the distribution of attribute coefficients across different countries.
-Location-related biases in ratings
-<u>Cultural biases</u>
+
+
+**Location-related biases in ratings**
+
+*Cultural biases*
+
 To see whether users from certain countries are more generous or more critical in their ratings compared to users from other countries, we calculate the final rating for each country and use statistical tests to determine if the final rating is the same for each country.
-<u>Beer origin bias</u>
+
+*Beer origin bias*
+
 To assess whether users rate domestic beers higher than foreign ones, we compare the final ratings of domestic versus foreign beers and use statistical tests to determine if the difference is significant. To further investigate this potential bias, we analyze whether the final rating of a beer correlates with the number of reviewers from the beer's country of origin by employing scatter plots, Pearson’s correlation coefficient, and linear regression. We repeat this analysis focusing only on reviews from beer enthusiasts—users who have written a substantial number of reviews—who might prioritize intrinsic qualities of the beers over external factors such as location.
-Other biases
-<u>Seasonal biases</u>
+
+
+**Other biases**
+
+*Seasonal biases*
+
 To examine how seasonal changes influence the ratings of different beer styles, we use the time information contained in ratings to identify the season during which each rating was posted, focusing on countries with four distinct seasons. We then group the ratings by season, calculate the average final rating for each beer style within each group, and compare these averages across different seasons to identify any notable variations.
-<u>Experience bias</u>
+
+*Experience bias*
+
 To analyze how users’ rating tendencies evolve with experience, we focus on users who have posted a substantial number of reviews, based on a chosen threshold. For each user, we sort their reviews chronologically and assign an "experience level" to each rating based on the number of reviews they had posted up to that point. These levels are predefined and consistent across all users: new reviewer (first n reviews), amateur (from the n+1th to the oth review), and expert (from the o+1th review onward). We then calculate and compare the average final rating for each experience level across all users. If a discernible trend emerges, we perform a paired t-test (comparing early vs. later reviews by the same user) to determine whether any observed increase or decrease in ratings is statistically significant.
+
 
 ### Proposed timeline:
 **Week 7:** projet choice
+
 **Week 8:** data loading and cleaning
+
 **Week 9:** verification of project feasibility (verification that there is enough data for the different tasks), writing of the README
+
 **Weeks 12 and 13:** implementation of the analyses described in "Methods"
+
 **Week 14:** writing of the data story
+
 
 ### Organization within the team:
 **Data loading:** Athénaïs
+
 **Data cleaning:** Orkun and Athénaïs
+
 **Beer style preferences:** Samet/Orkun
+
 **Importance of specific beer attributes:** Orkun/Samet
+
 **Cultural biases & Beer origin bias:** Melis
+
 **Seasonal biases:** Begüm
+
 **Experience bias:** Athénaïs
+
 **Data story:** everyone (everyone will add complete the data story with elements related to the part they worked on)
+
 
 ### Questions for TAs:
 
