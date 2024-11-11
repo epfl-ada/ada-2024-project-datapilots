@@ -77,9 +77,9 @@ To analyze how users’ rating tendencies evolve with experience, we focus on us
 
 **Data cleaning:** Orkun and Athénaïs
 
-**Beer style preferences:** Samet/Orkun
+**Beer style preferences:** Orkun
 
-**Importance of specific beer attributes:** Orkun/Samet
+**Importance of specific beer attributes:** Samet
 
 **Cultural biases & Beer origin bias:** Melis
 
