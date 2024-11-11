@@ -49,10 +49,12 @@ def clean_location_column(df):
     """
     # make sure that a 'location' column is present
     if 'location' in df.columns:
-        df['location'] = df['location'].astype(str).str.strip()  # remove leading and trailing spaces
 
-        # remove embedded HTML links
-        df['location'] = df['location'].apply(lambda x: re.sub(r'<a\s+(?:[^>]*?\s+)?href=["\'].*?["\'].*?>.*?<\/a>', '', x))
+        # remove leading and trailing spaces
+        df['location'] = df['location'].astype(str).str.strip()
+
+        # remove rows where 'location' contains '</a>' (indicating an embedded link)
+        df = df[~df['location'].str.contains('</a>', na=False)]
         
         # standardize locations starting with 'United States' to 'United States'
         df['location'] = df['location'].apply(lambda x: 'United States' if x.startswith('United States') else x)
