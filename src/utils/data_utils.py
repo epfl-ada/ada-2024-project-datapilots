@@ -1,12 +1,15 @@
 import pandas as pd
+import re
 
 def assign_experience_level(df, new_reviewer_threshold, amateur_threshold):
     """
     Assigns an experience level to each review based on the number of reviews posted by the user up to that review.
+
     Parameters:
     df (pd.DataFrame): DataFrame containing user reviews including columns 'user_id' and 'date'
     new_reviewer_threshold (int): number of reviews to be considered a new reviewer
     amateur_threshold (int): number of reviews to be considered an amateur before becoming an expert
+
     Returns:
     pd.DataFrame: updated DataFrame with an 'experience_level' column
     """
@@ -26,5 +29,32 @@ def assign_experience_level(df, new_reviewer_threshold, amateur_threshold):
         
         # assign 'expert' to the remaining reviews beyond the amateur_threshold
         df.loc[group.index[amateur_threshold:], 'experience_level'] = 'expert'
+    
+    return df
+
+
+
+def clean_location_column(df):
+    """
+    Cleans the 'location' column by:
+    - removing leading and trailing spaces
+    - removing embedded HTML links
+    - standardizing entries starting with 'United States' to 'United States'
+
+    Parameters:
+    df (pd.DataFrame): dataframe containing a 'location' column
+
+    Returns:
+    pd.DataFrame: updated dataframe with cleaned 'location' column
+    """
+    # make sure that a 'location' column is present
+    if 'location' in df.columns:
+        df['location'] = df['location'].astype(str).str.strip()  # remove leading and trailing spaces
+
+        # remove embedded HTML links
+        df['location'] = df['location'].apply(lambda x: re.sub(r'<a\s+(?:[^>]*?\s+)?href=["\'].*?["\'].*?>.*?<\/a>', '', x))
+        
+        # standardize locations starting with 'United States' to 'United States'
+        df['location'] = df['location'].apply(lambda x: 'United States' if x.startswith('United States') else x)
     
     return df
