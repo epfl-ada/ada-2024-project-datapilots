@@ -53,7 +53,7 @@ To assess whether users rate domestic beers higher than foreign ones, we compare
 
 *Seasonal biases*
 
-To examine how seasonal changes influence the ratings of different beer styles, we use the time information contained in ratings to identify the season during which each rating was posted, focusing on countries with four distinct seasons. We then group the ratings by season, calculate the average final rating for each beer style within each group, and compare these averages across different seasons to identify any notable variations.
+To examine how seasonal changes influence the ratings of different beer styles, we use the time information contained in ratings to identify the season during which each rating was posted, taking into account the location of the user (Northern hemisphere, Southern hemisphere or equatorial area) to accurately determine the season. For simplicity, we only perform the analysis on users from the 10 countries with the highest number of reviews. We then group the ratings by season and calculate the average final rating within each group to see if some seasons are associated with higher ratings overall. We then refine the analysis by calculating the average final rating for each beer style within each group, and compare these averages across different seasons to identify any notable variations.
 
 *Experience bias*
 

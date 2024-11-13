@@ -139,6 +139,8 @@ def clean_location_column(df):
     - removing leading and trailing spaces
     - removing embedded HTML links
     - standardizing entries starting with 'United States' to 'United States'
+    - standardizing entries starting with 'Canada' to 'Canada'
+    - replacing locations with the structure 'United Kingdom, [second word]' by '[second word]'
 
     Parameters:
     df (pd.DataFrame): dataframe containing a 'location' column
@@ -157,5 +159,38 @@ def clean_location_column(df):
         
         # standardize locations starting with 'United States' to 'United States'
         df['location'] = df['location'].apply(lambda x: 'United States' if x.startswith('United States') else x)
+
+        # standardize locations starting with 'Canada' to 'Canada'
+        df['location'] = df['location'].apply(lambda x: 'Canada' if x.startswith('Canada') else x)
+
+        # replace 'United Kingdom, [second word]' with '[second word]'
+        df['location'] = df['location'].apply(lambda x: x.split(', ')[1] if x.startswith('United Kingdom,') else x)
     
     return df
+
+
+def get_season(date):
+    """
+    Determines the season for a given date, assuming seasons based on the Northern Hemisphere.
+
+    Parameters:
+    date (datetime): a datetime object representing the date
+
+    Returns:
+    str: the season corresponding to the month of the date
+         Returns 'Winter' for December, January, and February.
+         Returns 'Spring' for March, April, and May.
+         Returns 'Summer' for June, July, and August.
+         Returns 'Fall' for September, October, and November.
+ 
+    """
+    month = date.month
+    if month in [12, 1, 2]:
+        return 'Winter'
+    elif month in [3, 4, 5]:
+        return 'Spring'
+    elif month in [6, 7, 8]:
+        return 'Summer'
+    elif month in [9, 10, 11]:
+        return 'Fall'
+
