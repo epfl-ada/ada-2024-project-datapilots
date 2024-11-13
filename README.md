@@ -26,6 +26,9 @@ a) Do seasonal changes affect how different beer styles are rated?
 b) Do users become more critical with experience?
 
 
+### Data
+
+
 ### Methods:
 **Cultural influence on beer preferences**
 
