@@ -69,7 +69,7 @@ To analyze how users’ rating tendencies evolve with experience, we focus on us
 
 **Week 8:** data loading and cleaning
 
-**Week 9:** verification of project feasibility (verification that there is enough data for the different tasks), writing of the README
+**Week 9:** verification of project feasibility (ensuring there is enough data for the different tasks), writing of the README, and beginning implementation of some analysis components if time permits 
 
 **Weeks 12 and 13:** implementation of the analyses described in "Methods"
 
