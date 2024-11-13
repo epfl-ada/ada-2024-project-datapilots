@@ -13,6 +13,26 @@ import statsmodels.api as sm
 
 
 
+
+def merge_data_(data):
+
+    style_country_counts = {}
+
+    unique_beer_styles = data['style'].unique()
+    
+    for style in unique_beer_styles:
+    
+        style_data = data[data['style'] == style]     # Filter data for the current beer style
+        
+        country_counts = style_data['user_location'].value_counts()       # Count the number of ratings by country for this style
+        
+        style_country_counts[style] = country_counts      # Store the result in the dictionary with the beer style as the key
+    
+    merged_df = pd.DataFrame(style_country_counts).transpose().fillna(0) # Convert the dictionary to a DataFrame
+
+    return merged_df
+
+
 def plot_actual_vs_predicted_(y_actual, y_pred, title='Actual vs Predicted'):
     plt.figure(figsize=(8, 6))
     plt.scatter(y_actual, y_pred, alpha=0.3)
