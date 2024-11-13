@@ -119,7 +119,6 @@ pip install -r pip_requirements.txt
 ### Project Structure
 
 The directory is organized in the following way:
-
 ```
 ├── data                        <- Project data files (absent from the remote)
 │
@@ -130,18 +129,18 @@ The directory is organized in the following way:
 │   │   └── extract_rate_beer.py        <- Script to extract downloaded RateBeer data 
 │   ├── models                  <- Model directory
 │   ├── utils                   <- Utility directory
+│   │   └── data_utils.py               <- Helper functions used in results.ipynb
 │   ├── scripts                 <- Scripts directory
-│   │   └── review_parser.py            <- Script that processes each ratings.txt file by dividing it into parts, parsing each part and
+│   │   └── review_parser.py            <- Script that processes each ratings.txt file by dividing it into parts, parsing each part, and
 │                                          saving as JSON
 │
 ├── tests                       <- Tests of any kind
 │
-├── results.ipynb               <- Notebook containing our analyses
+├── results.ipynb               <- Notebook containing our analyses (calls helper functions from data_utils.py)
 │
 ├── .gitignore                  <- List of files ignored by git
 ├── pip_requirements.txt        <- File for installing python dependencies
 └── README.md
-
 ```
 
 ### Data Setup Instructions
