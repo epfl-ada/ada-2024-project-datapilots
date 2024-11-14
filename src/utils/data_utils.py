@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 import numpy as np
+from matplotlib import pyplot as plt
 from scipy.stats import ttest_rel
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import LassoCV, RidgeCV
@@ -33,38 +34,114 @@ def merge_data_(data):
     return merged_df
 
 
-def plot_actual_vs_predicted_(y_actual, y_pred, title='Actual vs Predicted'):
-    plt.figure(figsize=(8, 6))
-    plt.scatter(y_actual, y_pred, alpha=0.3)
-    plt.plot([y_actual.min(), y_actual.max()], [y_actual.min(), y_actual.max()], 'k--', lw=4)
-    plt.xlabel('Actual')
-    plt.ylabel('Predicted')
-    plt.title(title)
+def plot_actual_vs_predicted_(y_actual, y_pred, title='Actual vs Predicted', cmap='Reds', line_color='red', line_style='--', alpha=0.8, point_size=30, fig_size=(6, 4)):
+    """
+    Plots a compraison of actual values and predicted values  from the chosen training model (linear, lasso or ridge).
+
+    Parameters:
+    y_actual (array): array of actual values of the target variable.
+    y_pred (array): Array of predicted target values from the model.
+    title (str): Title of the plot. Defaults to 'Actual vs Predicted'.
+    cmap (str): Colormap to use for the scatter plot. Defaults to 'Greys'.
+    line_color (str): Color of the line of equality. Defaults to 'red'.
+    line_style (str): Line style of the line of equality. Defaults to '--'.
+    alpha (float): Transparency level of the scatter points. Defaults to 0.8.
+    point_size (int): Size of the scatter points. Defaults to 30.
+    fig_size (tuple): Size of the figure in inches (width, height). Defaults to (6, 4).
+
+    """
+ 
+    fig, ax = plt.subplots(figsize=fig_size)
+    scatter = ax.scatter(y_actual, y_pred, c=y_actual, cmap=cmap, alpha=alpha, s=point_size, edgecolor='k')
+    cbar = plt.colorbar(scatter, ax=ax)
+    cbar.set_label("Actual Values")
+
+    ax.plot([y_actual.min(), y_actual.max()], [y_actual.min(), y_actual.max()], color=line_color, linestyle=line_style,  linewidth=2)
+    ax.set_xlabel('Actual Values')
+    ax.set_ylabel('Predicted Values')
+    ax.set_title(title)
+    plt.grid(visible=True, linestyle='--', alpha=0.6)
     plt.show()
 
-def plot_residuals(y_actual, y_pred, title='Residual Plot'):
-    residuals = y_actual - y_pred
-    plt.figure(figsize=(8, 6))
-    plt.scatter(y_actual, residuals, alpha=0.6)
-    plt.axhline(y=0, color='r', linestyle='--')
-    plt.xlabel('Actual Values')
-    plt.ylabel('Residuals')
-    plt.title(title)
+
+def plot_residuals(y_actual, y_pred, title='Residual Plot', cmap='coolwarm', line_color='red', alpha=0.8, point_size=30, fig_size=(6, 4), show_hist=False):
+    """
+    Plots the residuals (difference between actual values and predicted values) with custom styling, using a colormap.
+
+    Parameters:
+    y_actual (array): Array of actual values.
+    y_pred (array): Array of predicted values.
+    title (str): Title of the plot.
+    cmap (str): Colormap to use for the scatter plot. Default cmap is 'coolwarm'.
+    line_color (str): Color of the zero line on the residual plot. Default color'red'.
+    alpha (float): Transparency level for scatter plot points. Default value is 0.8.
+    point_size (int): Size of scatter plot points. Default value is 30 .
+    fig_size (tuple): Size of the figure in inches (width, height). Default value is False.
+    show_hist (bool): If True, overlays a histogram of residuals on the plot. Default value is True.
+
+    """
+    residuals= y_actual- y_pred
+    fig, ax = plt.subplots(figsize=fig_size)
+    #Creating a scatter plot of actual values versus residual values so that color changes according to the magnitude of the residaul
+    scatter = ax.scatter(y_actual, residuals, c=residuals, cmap=cmap, alpha=alpha, s=point_size, edgecolor='k')
+    
+    cbar = plt.colorbar(scatter, ax=ax)
+    cbar.set_label("Residuals")
+    
+    # Drawing the line for zero value and namig the axes
+    ax.axhline(y=0, color=line_color, linestyle='--')
+    ax.set_xlabel('Actual Values')
+    ax.set_ylabel('Residuals')
+    ax.set_title(title)
+    plt.grid(visible=True, linestyle='--', alpha=0.6)
+    # Optional histogram overlay
+    if show_hist:
+        ax_hist = ax.twinx()
+        ax_hist.hist(residuals, bins=20, alpha=0.2, color='grey', orientation='horizontal')
+        ax_hist.set_yticks([])
+
     plt.show()
 
 
-def advanced_linear_regression(X, y, model_type='linear', alphas=np.logspace(-4, 4, 100), scale_data=True, test_size=0.3, random_state=42, cross_validate=False, cv_folds=5):
-    """Train and evaluate a regression model with options for scaling, cross-validation, and different model types."""
-    # Splitting the data
+
+def advanced_linear_regression(X, y, model_type='linear', alphas=np.logspace(-4, 4, 100), scale_data=True, test_size=0.3, random_state=66, cross_validate=False, cv_folds=5):
+    """
+    Trains and evaluates a regression model with options for scaling, cross-validation, and different model types.Also calls plotting functions to plot the results
+
+    Parameters:
+    X (pandas dataframe or numpy array): matrix of independent variables which will be used to predict target variable vector.
+    y (pandas dataframe or numpy array) : target variable vector.
+    model_type (str): Type of regression model to use. Options are 'linear', 'lasso' , and 'ridge'. Default one is linear model
+    alphas (array): array of alpha values for regularization, used for Lasso and Ridge regression. Default array is np.logspace(-4, 4, 100).
+    scale_data (bool): Option to standardize features before training. Default value is True.
+    test_size (float): Proportion of the dataset to include in the test split. Default value is 0.3.
+    random_state (int): Seed for random number generator to ensure reproducibility. Default value is  66.
+    cross_validate (bool): Whether to perform cross-validation. Defaults to False.
+    cv_folds (int): Number of cross-validation folds if cross_validate is True. Default value is  5.
+
+    Returns:
+    dict: A dictionary containing training and testing metrics:
+        - 'train_mse': Mean squared error on the training set.
+        - 'train_r2': R-squared score on the training set.
+        - 'test_mse': Mean squared error on the test set.
+        - 'test_r2': R-squared score on the test set.
+        - 'train_pearson': Pearson correlation coefficient on the training set.
+        - 'test_pearson': Pearson correlation coefficient on the test set.
+
+    Raises:
+    ValueError: If model_type is not one of 'linear', 'lasso', or 'ridge'.
+
+    """
+    # Here we are splitting the data by importing train_test_split function from the python library
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
 
-    # Scaling if requested
+    # Option to choose scaling.Generally scaling is a good practice before performing a linear regression  
     if scale_data:
         scaler = StandardScaler()
         X_train = scaler.fit_transform(X_train)
         X_test = scaler.transform(X_test)
 
-    # Model selection and training
+    # Selecting the model and training the data set
     if model_type == 'linear':
         
         X_train_sm = sm.add_constant(X_train)  
