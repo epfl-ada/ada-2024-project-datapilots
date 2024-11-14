@@ -85,7 +85,7 @@ To analyze how users’ rating tendencies evolve with experience, we focus on us
 
 **Importance of specific beer attributes:** Samet
 
-**Cultural biases & Beer origin bias:** Melis
+**Cultural biases & Beer origin bias:** Begüm, Melis
 
 **Seasonal biases:** Begüm
 
