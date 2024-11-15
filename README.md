@@ -65,7 +65,7 @@ To analyze how users’ rating tendencies evolve with experience, we focus on us
 
 
 ### Proposed timeline:
-**Week 7:** projet choice
+**Week 7:** project choice
 
 **Week 8:** data loading and cleaning
 
