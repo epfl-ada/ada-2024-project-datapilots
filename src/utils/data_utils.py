@@ -14,6 +14,17 @@ import statsmodels.api as sm
 
 
 
+def calculate_trend(df): 
+    X = df['year'].values.reshape(-1, 1)
+    y = df['avg_rating'].values
+    if len(X) > 1:  # Need more than one year to calculate trend
+        model = LinearRegression()
+        model.fit(X, y)
+        trend = model.coef_[0] 
+    else:
+        trend = np.nan  # Not enough data to calculate trend
+    return trend
+
 
 def merge_data_(data):
 
