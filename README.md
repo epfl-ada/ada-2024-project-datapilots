@@ -35,7 +35,7 @@ The dataset for this analysis comprises beer reviews collected from two popular 
 
 *Beer style preferences*
 
-We employ clustering techniques to identify the most popular beer styles in each country. Additionally, we  use the time information contained in beer reviews to determine whether regional beer style preferences remain stable over time—supporting the hypothesis that they are influenced by culture—or if they fluctuate, suggesting other contributing factors.
+We use the average rating of certain beer styles as features of a given country and use a clustering algorithm to determine if certain countries cluster together in terms of beer style preferences. We also use the time information contained in beer reviews to determine whether regional beer style preferences remain stable over time—supporting the hypothesis that they are influenced by culture—or if they fluctuate, suggesting other contributing factors.
 
 *Importance of specific beer attributes*
 
