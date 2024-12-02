@@ -154,16 +154,19 @@ def advanced_linear_regression(X, y, model_type='linear', alphas=np.logspace(-4,
 
     # Selecting the model and training the data set
     if model_type == 'linear':
-        
-        X_train_sm = sm.add_constant(X_train)  
+        # Add constant to training data
+        X_train_sm = sm.add_constant(X_train, has_constant='add')
         model = sm.OLS(y_train, X_train_sm).fit()
-        
-        
+    
+        # Print the summary of the model
         print(model.summary())
-        
+    
+        # Add constant to test data and ensure columns align
+        X_test_sm = sm.add_constant(X_test, has_constant='add')
+    
+        # Predictions
         y_train_pred = model.predict(X_train_sm)
-        y_test_pred = model.predict(sm.add_constant(X_test))
-        
+        y_test_pred = model.predict(X_test_sm)
     elif model_type == 'lasso':
         model = LassoCV(alphas=alphas, cv=cv_folds, random_state=random_state)
         model.fit(X_train, y_train)
