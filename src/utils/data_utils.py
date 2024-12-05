@@ -115,7 +115,7 @@ def plot_residuals(y_actual, y_pred, title='Residual Plot', cmap='coolwarm', lin
 
 
 
-def advanced_linear_regression(X, y, model_type='linear', alphas=np.logspace(-4, 4, 100), scale_data=True, test_size=0.3, random_state=66, cross_validate=False, cv_folds=5):
+def advanced_linear_regression(X, y, model_type='linear', make_plots = True, alphas=np.logspace(-4, 4, 100), scale_data=True, test_size=0.3, random_state=66, cross_validate=False, cv_folds=5):
     """
     Trains and evaluates a regression model with options for scaling, cross-validation, and different model types.Also calls plotting functions to plot the results
 
@@ -201,11 +201,11 @@ def advanced_linear_regression(X, y, model_type='linear', alphas=np.logspace(-4,
         cv_mse = -cv_scores
         print(f"Cross-Validation MSE: {cv_mse.mean()} ± {cv_mse.std()}")
 
-    
-    plot_residuals(y_train, y_train_pred, title=f'Residuals {model_type.capitalize()} Regression Train')
-    plot_actual_vs_predicted_(y_train, y_train_pred, title=f'Actual vs Predicted {model_type.capitalize()} Regression Train')
-    plot_residuals(y_test, y_test_pred, title=f'Residuals {model_type.capitalize()} Regression Test')
-    plot_actual_vs_predicted_(y_test, y_test_pred, title=f'Actual vs Predicted {model_type.capitalize()} Regression Test')
+    if make_plots:
+        plot_residuals(y_train, y_train_pred, title=f'Residuals {model_type.capitalize()} Regression Train')
+        plot_actual_vs_predicted_(y_train, y_train_pred, title=f'Actual vs Predicted {model_type.capitalize()} Regression Train')
+        plot_residuals(y_test, y_test_pred, title=f'Residuals {model_type.capitalize()} Regression Test')
+        plot_actual_vs_predicted_(y_test, y_test_pred, title=f'Actual vs Predicted {model_type.capitalize()} Regression Test')
 
     return metrics
     
