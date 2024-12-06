@@ -2,6 +2,7 @@ import pandas as pd
 import re
 import numpy as np
 from matplotlib import pyplot as plt
+import seaborn as sns
 from scipy.stats import ttest_rel
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import LassoCV, RidgeCV
@@ -12,6 +13,121 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from scipy.stats import pearsonr
 import statsmodels.api as sm  
 
+
+
+
+def plot_hist(attributes,ba_ratings_loc_filtered_no_missing,name,axes):
+
+    for i, col in enumerate(attributes):
+        sns.histplot(ba_ratings_loc_filtered_no_missing[col],
+                     bins=int((ba_ratings_loc_filtered_no_missing[col].max() - ba_ratings_loc_filtered_no_missing[col].min()) / 0.05),
+                     kde=False, ax=axes[i // 2, i % 2])
+        axes[i // 2, i % 2].set_title(f"Distribution of {col} in {name}")
+        axes[i // 2, i % 2].set_xlabel(col)
+        axes[i // 2, i % 2].set_ylabel("Rating frequence")
+        axes[i // 2, i % 2].grid(True, linestyle='--', alpha=0.7)  
+    plt.tight_layout()
+    plt.show()
+    
+def top_10_predicted(top_10_styles,loc):
+
+    plt.figure(figsize=(12, 6))
+    for style in top_10_styles.index:
+        plt.plot(top_10_styles.columns, top_10_styles.loc[style], label=style)
+    
+    plt.title(f"Seasonal Trends in Predicted Ratings: {loc} 10 Beer Styles")
+    plt.xlabel("Season")
+    plt.ylabel("Predicted Rating")
+    plt.legend(title="Beer Style", bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    plt.show()
+    
+def plot_over_time(agg_data,regions,styles):
+
+    filtered_agg_data = agg_data[              # Filter `agg_data` to include only the selected regions and beer styles
+    (agg_data['user_location'].isin(regions)) &
+    (agg_data['style'].isin(styles))
+]
+
+    color_mapping = {regions[0]: 'darkblue',regions[1]: 'red',regions[2]: 'magenta'}
+    marker_mapping = {styles[0]: 'o',styles[1]: '^' }
+    
+    plt.figure(figsize=(14, 10))
+    for region in regions:
+        for style in styles:
+            subset = filtered_agg_data[(filtered_agg_data['user_location'] == region) & (filtered_agg_data['style'] == style)]
+            if len(subset) > 1:  # Ensure we have enough data points to plot a trend
+                color = color_mapping[region]  
+                marker = marker_mapping[style]     
+                plt.plot(subset['year'], subset['avg_rating'], marker=marker, label=f'{region} - {style}', color=color, linestyle='-')
+    
+    plt.xlabel("Year")
+    plt.ylabel("Average Rating")
+    plt.title("Regional Beer Style Preferences Over Time for American IPA and Pale Lager")
+    plt.legend(title="Region - Style", bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.grid()
+    plt.show()
+    
+def plot_3D_scatter(subset_df):
+
+    x_labels = subset_df.index        # Beer styles on the x-axis
+    y_labels = subset_df.columns      # Countries on the y-axis
+    x_pos, y_pos = np.meshgrid(range(len(x_labels)), range(len(y_labels)), indexing="ij")
+    z_values = subset_df.values       # Number of ratings on the z-axis
+    
+    x_pos_flat = x_pos.flatten()
+    y_pos_flat = y_pos.flatten()
+    z_values_log_flat = np.log10(z_values.flatten() + 1)  # Log scale to handle large ranges
+    
+    # Scatter plotting
+    
+    fig = plt.figure(figsize=(18, 10))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.view_init(elev=30, azim=45)
+    scatter = ax.scatter(x_pos_flat, y_pos_flat, z_values_log_flat, c=z_values_log_flat, cmap='viridis', s=50)
+    ax.set_xlabel('Beer Styles', labelpad=20)
+    ax.set_ylabel('Countries', labelpad=20)
+    ax.set_zlabel('Log(Number of Ratings)', labelpad=10)
+    ax.set_title('3D Scatter Plot of Ratings by Beer Style and Country (Log Scale) - Most Common Countries')
+    
+    ax.set_xticks(np.arange(0, len(x_labels), 5))
+    ax.set_xticklabels(x_labels[::5], rotation=45, ha='right', fontsize=8)
+    ax.set_yticks(np.arange(0, len(y_labels), 5))
+    ax.set_yticklabels(y_labels[::5], fontsize=8)
+    
+    cbar = fig.colorbar(scatter, ax=ax, shrink=0.5, aspect=5, label='Log(Number of Ratings)')
+    
+    plt.show()
+
+def top_10_barh(data_x,data_y,title,color_,name):
+
+    plt.figure(figsize=(12, 6))
+    plt.barh(data_x, data_y, color=color_)
+    plt.title(f"{title} 10 Countries by Average Rating - {name}")
+    plt.xlabel("Average Rating")
+    plt.ylabel("Country")
+    plt.gca().invert_yaxis()
+    plt.tight_layout()
+    plt.show()
+    
+def top_10_plots(ba_top_10_user_locations,rb_top_10_user_locations,title):
+
+    fig, axes = plt.subplots(1, 2, figsize=(16, 8))
+
+    sns.barplot(x=ba_top_10_user_locations.values, y=ba_top_10_user_locations.index, ax=axes[0])
+    axes[0].set_title(f"Top 10 {title} in BeerAdvocate")
+    axes[0].set_xlabel("Count")
+    axes[0].set_ylabel(title)
+    axes[0].set_xscale("log")
+    
+    sns.barplot(x=rb_top_10_user_locations.values, y=rb_top_10_user_locations.index, ax=axes[1])
+    axes[1].set_title(f"Top 10 {title} in RateBeer")
+    axes[1].set_xlabel("Count")
+    axes[1].set_ylabel(title)
+    axes[1].set_xscale("log")
+    
+    plt.tight_layout()
+    plt.show()
 
 def calculate_trend(df): 
     X = df['year'].values.reshape(-1, 1)
@@ -42,8 +158,7 @@ def merge_data_(data):
     merged_df = pd.DataFrame(style_country_counts).transpose().fillna(0) # Convert the dictionary to a DataFrame
 
     return merged_df
-
-
+    
 def plot_actual_vs_predicted_(y_actual, y_pred, title='Actual vs Predicted', cmap='Reds', line_color='red', line_style='--', alpha=0.8, point_size=30, fig_size=(6, 4)):
     """
     Plots a compraison of actual values and predicted values  from the chosen training model (linear, lasso or ridge).
