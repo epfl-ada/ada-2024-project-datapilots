@@ -135,7 +135,7 @@ The directory is organized in the following way:
 ├── tests                       <- Tests of any kind
 │
 │
-├── results.ipynb               <- Notebook containing our analyses in P2 (calls helper functions from data_utils.py)
+├── results.ipynb               <- Notebook containing our analyses (calls helper functions from data_utils.py)
 │
 ├── .gitignore                  <- List of files ignored by git
 ├── pip_requirements.txt        <- File for installing python dependencies
