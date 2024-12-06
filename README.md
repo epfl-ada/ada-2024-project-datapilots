@@ -134,24 +134,8 @@ The directory is organized in the following way:
 │
 ├── tests                       <- Tests of any kind
 │
-├── analysis                    <- Analysis folders                     
-│   ├── Data Wrangling                                   <- Folder containing our data loading and cleaning files
-│   │   └── data_wrangling.ipynb                             <-  Notebook containing our data loading and cleaning part (calls helper functions from data_utils.py)
-│   ├── Beer Style Preferences                           <- Folder for Beer Style Preference analysis
-│   │   └── part1.ipynb                                      <-  Notebook containing part 1's analysis
-│   ├── Importance of Specific Beer Attributes           <- Folder for Importance of Specific Beer Attributes
-│   │   └── part2.ipynb                                      <-  Notebook containing part 2's analysis   
-│   ├── Cultural Biases & Beer Origin Bias               <- Folder for Cultural Biases & Beer Origin Bias
-│   │   └── part3.ipynb                                      <-  Notebook containing part 3's analysis   
-│   ├── Seasonal Biases                                  <- Folder for Seasonal Biases
-│   │   └── part4.ipynb                                      <-  Notebook containing part 4's analysis      
-│   ├── Experience Bias                                  <- Folder for Experience Bias
-│   │   └── part5.ipynb                                      <-  Notebook containing part 5's analysis      
 │
-│
-├── results_P2.ipynb               <- Notebook containing our analyses in P2 (calls helper functions from data_utils.py)
-│
-├── data_story.ipynb               <- Notebook containing our final results as a story
+├── results.ipynb               <- Notebook containing our analyses in P2 (calls helper functions from data_utils.py)
 │
 ├── .gitignore                  <- List of files ignored by git
 ├── pip_requirements.txt        <- File for installing python dependencies
