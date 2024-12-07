@@ -16,7 +16,8 @@ import statsmodels.api as sm
 
 
 
-def plot_hist(attributes,ba_ratings_loc_filtered_no_missing,name,axes):
+def plot_hist(attributes,ba_ratings_loc_filtered_no_missing,name):
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
     for i, col in enumerate(attributes):
         sns.histplot(ba_ratings_loc_filtered_no_missing[col],
@@ -230,7 +231,7 @@ def plot_residuals(y_actual, y_pred, title='Residual Plot', cmap='coolwarm', lin
 
 def advanced_linear_regression(X, y, model_type='linear', make_plots=True, alphas=np.logspace(-4, 4, 100), 
                                scale_data=True, test_size=0.3, random_state=66, cross_validate=False, 
-                               cv_folds=5, return_model=False, print_summary=True):
+                               cv_folds=5, print_summary=True):
     """
     Trains and evaluates a regression model with options for scaling, cross-validation, and different model types.
     Optionally prints model summary and returns the trained model.
@@ -324,10 +325,9 @@ def advanced_linear_regression(X, y, model_type='linear', make_plots=True, alpha
         plot_residuals(y_test, y_test_pred, title=f'Residuals {model_type.capitalize()} Regression Test')
         plot_actual_vs_predicted_(y_test, y_test_pred, title=f'Actual vs Predicted {model_type.capitalize()} Regression Test')
 
-    # Return metrics and optionally the model
-    if return_model:
-        return metrics, model
-    return metrics
+    # Return metrics and  the model
+        
+    return metrics, model
    
 
 def assign_experience_level(df, new_reviewer_threshold, amateur_threshold):
