@@ -2,6 +2,7 @@ import pandas as pd
 import re
 import numpy as np
 from matplotlib import pyplot as plt
+import seaborn as sns
 from scipy.stats import ttest_rel
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import LassoCV, RidgeCV
@@ -13,6 +14,120 @@ from scipy.stats import pearsonr
 import statsmodels.api as sm  
 
 
+
+
+def plot_hist(attributes,ba_ratings_loc_filtered_no_missing,name,axes):
+
+    for i, col in enumerate(attributes):
+        sns.histplot(ba_ratings_loc_filtered_no_missing[col],
+                     bins=int((ba_ratings_loc_filtered_no_missing[col].max() - ba_ratings_loc_filtered_no_missing[col].min()) / 0.05),
+                     kde=False, ax=axes[i // 2, i % 2])
+        axes[i // 2, i % 2].set_title(f"Distribution of {col} in {name}")
+        axes[i // 2, i % 2].set_xlabel(col)
+        axes[i // 2, i % 2].set_ylabel("Rating frequence")
+        axes[i // 2, i % 2].grid(True, linestyle='--', alpha=0.7)  
+    plt.tight_layout()
+    plt.show()
+    
+def top_10_predicted(top_10_styles,loc):
+
+    plt.figure(figsize=(12, 6))
+    for style in top_10_styles.index:
+        plt.plot(top_10_styles.columns, top_10_styles.loc[style], label=style)
+    
+    plt.title(f"Seasonal Trends in Predicted Ratings: {loc} 10 Beer Styles")
+    plt.xlabel("Season")
+    plt.ylabel("Predicted Rating")
+    plt.legend(title="Beer Style", bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    plt.show()
+    
+def plot_over_time(agg_data,regions,styles):
+
+    filtered_agg_data = agg_data[              # Filter `agg_data` to include only the selected regions and beer styles
+    (agg_data['user_location'].isin(regions)) &
+    (agg_data['style'].isin(styles))
+]
+
+    color_mapping = {regions[0]: 'darkblue',regions[1]: 'red',regions[2]: 'magenta'}
+    marker_mapping = {styles[0]: 'o',styles[1]: '^' }
+    
+    plt.figure(figsize=(14, 10))
+    for region in regions:
+        for style in styles:
+            subset = filtered_agg_data[(filtered_agg_data['user_location'] == region) & (filtered_agg_data['style'] == style)]
+            if len(subset) > 1:  # Ensure we have enough data points to plot a trend
+                color = color_mapping[region]  
+                marker = marker_mapping[style]     
+                plt.plot(subset['year'], subset['avg_rating'], marker=marker, label=f'{region} - {style}', color=color, linestyle='-')
+    
+    plt.xlabel("Year")
+    plt.ylabel("Average Rating")
+    plt.title("Regional Beer Style Preferences Over Time for American IPA and Pale Lager")
+    plt.legend(title="Region - Style", bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.grid()
+    plt.show()
+    
+def plot_3D_scatter(subset_df):
+
+    x_labels = subset_df.index        # Beer styles on the x-axis
+    y_labels = subset_df.columns      # Countries on the y-axis
+    x_pos, y_pos = np.meshgrid(range(len(x_labels)), range(len(y_labels)), indexing="ij")
+    z_values = subset_df.values       # Number of ratings on the z-axis
+    
+    x_pos_flat = x_pos.flatten()
+    y_pos_flat = y_pos.flatten()
+    z_values_log_flat = np.log10(z_values.flatten() + 1)  # Log scale to handle large ranges
+    
+    # Scatter plotting
+    
+    fig = plt.figure(figsize=(18, 10))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.view_init(elev=30, azim=45)
+    scatter = ax.scatter(x_pos_flat, y_pos_flat, z_values_log_flat, c=z_values_log_flat, cmap='viridis', s=50)
+    ax.set_xlabel('Beer Styles', labelpad=20)
+    ax.set_ylabel('Countries', labelpad=20)
+    ax.set_zlabel('Log(Number of Ratings)', labelpad=10)
+    ax.set_title('3D Scatter Plot of Ratings by Beer Style and Country (Log Scale) - Most Common Countries')
+    
+    ax.set_xticks(np.arange(0, len(x_labels), 5))
+    ax.set_xticklabels(x_labels[::5], rotation=45, ha='right', fontsize=8)
+    ax.set_yticks(np.arange(0, len(y_labels), 5))
+    ax.set_yticklabels(y_labels[::5], fontsize=8)
+    
+    cbar = fig.colorbar(scatter, ax=ax, shrink=0.5, aspect=5, label='Log(Number of Ratings)')
+    
+    plt.show()
+
+def top_10_barh(data_x,data_y,title,color_,name):
+
+    plt.figure(figsize=(12, 6))
+    plt.barh(data_x, data_y, color=color_)
+    plt.title(f"{title} 10 Countries by Average Rating - {name}")
+    plt.xlabel("Average Rating")
+    plt.ylabel("Country")
+    plt.gca().invert_yaxis()
+    plt.tight_layout()
+    plt.show()
+    
+def top_10_plots(ba_top_10_user_locations,rb_top_10_user_locations,title):
+
+    fig, axes = plt.subplots(1, 2, figsize=(16, 8))
+
+    sns.barplot(x=ba_top_10_user_locations.values, y=ba_top_10_user_locations.index, ax=axes[0])
+    axes[0].set_title(f"Top 10 {title} in BeerAdvocate")
+    axes[0].set_xlabel("Count")
+    axes[0].set_ylabel(title)
+    axes[0].set_xscale("log")
+    
+    sns.barplot(x=rb_top_10_user_locations.values, y=rb_top_10_user_locations.index, ax=axes[1])
+    axes[1].set_title(f"Top 10 {title} in RateBeer")
+    axes[1].set_xlabel("Count")
+    axes[1].set_ylabel(title)
+    axes[1].set_xscale("log")
+    
+    plt.tight_layout()
+    plt.show()
 
 def calculate_trend(df): 
     X = df['year'].values.reshape(-1, 1)
@@ -43,8 +158,7 @@ def merge_data_(data):
     merged_df = pd.DataFrame(style_country_counts).transpose().fillna(0) # Convert the dictionary to a DataFrame
 
     return merged_df
-
-
+    
 def plot_actual_vs_predicted_(y_actual, y_pred, title='Actual vs Predicted', cmap='Reds', line_color='red', line_style='--', alpha=0.8, point_size=30, fig_size=(6, 4)):
     """
     Plots a compraison of actual values and predicted values  from the chosen training model (linear, lasso or ridge).
@@ -114,21 +228,25 @@ def plot_residuals(y_actual, y_pred, title='Residual Plot', cmap='coolwarm', lin
     plt.show()
 
 
-
-def advanced_linear_regression(X, y, model_type='linear', make_plots = True, alphas=np.logspace(-4, 4, 100), scale_data=True, test_size=0.3, random_state=66, cross_validate=False, cv_folds=5):
+def advanced_linear_regression(X, y, model_type='linear', make_plots=True, alphas=np.logspace(-4, 4, 100), 
+                               scale_data=True, test_size=0.3, random_state=66, cross_validate=False, 
+                               cv_folds=5, return_model=False, print_summary=True):
     """
-    Trains and evaluates a regression model with options for scaling, cross-validation, and different model types.Also calls plotting functions to plot the results
+    Trains and evaluates a regression model with options for scaling, cross-validation, and different model types.
+    Optionally prints model summary and returns the trained model.
 
     Parameters:
-    X (pandas dataframe or numpy array): matrix of independent variables which will be used to predict target variable vector.
-    y (pandas dataframe or numpy array) : target variable vector.
-    model_type (str): Type of regression model to use. Options are 'linear', 'lasso' , and 'ridge'. Default one is linear model
-    alphas (array): array of alpha values for regularization, used for Lasso and Ridge regression. Default array is np.logspace(-4, 4, 100).
-    scale_data (bool): Option to standardize features before training. Default value is True.
-    test_size (float): Proportion of the dataset to include in the test split. Default value is 0.3.
-    random_state (int): Seed for random number generator to ensure reproducibility. Default value is  66.
+    X (pandas dataframe or numpy array): Matrix of independent variables used to predict the target variable.
+    y (pandas dataframe or numpy array): Target variable vector.
+    model_type (str): Type of regression model to use. Options are 'linear', 'lasso', and 'ridge'. Default is 'linear'.
+    alphas (array): Array of alpha values for regularization, used for Lasso and Ridge regression.
+    scale_data (bool): Option to standardize features before training. Default is True.
+    test_size (float): Proportion of the dataset to include in the test split. Default is 0.3.
+    random_state (int): Seed for random number generator to ensure reproducibility. Default is 66.
     cross_validate (bool): Whether to perform cross-validation. Defaults to False.
-    cv_folds (int): Number of cross-validation folds if cross_validate is True. Default value is  5.
+    cv_folds (int): Number of cross-validation folds if cross_validate is True. Default is 5.
+    return_model (bool): Whether to return the trained model. Defaults to False.
+    print_summary (bool): Whether to print the model summary. Defaults to True.
 
     Returns:
     dict: A dictionary containing training and testing metrics:
@@ -138,33 +256,29 @@ def advanced_linear_regression(X, y, model_type='linear', make_plots = True, alp
         - 'test_r2': R-squared score on the test set.
         - 'train_pearson': Pearson correlation coefficient on the training set.
         - 'test_pearson': Pearson correlation coefficient on the test set.
+    model (optional): The trained regression model if return_model=True.
 
     Raises:
     ValueError: If model_type is not one of 'linear', 'lasso', or 'ridge'.
-
     """
-    # Here we are splitting the data by importing train_test_split function from the python library
+
+    # Split the data
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
 
-    # Option to choose scaling.Generally scaling is a good practice before performing a linear regression  
+    # Optionally scale the data
     if scale_data:
         scaler = StandardScaler()
         X_train = scaler.fit_transform(X_train)
         X_test = scaler.transform(X_test)
 
-    # Selecting the model and training the data set
+    # Train the model
     if model_type == 'linear':
-        # Add constant to training data
+        # Add constant for statsmodels
         X_train_sm = sm.add_constant(X_train, has_constant='add')
         model = sm.OLS(y_train, X_train_sm).fit()
-    
-        # Print the summary of the model
-        print(model.summary())
-    
-        # Add constant to test data and ensure columns align
+        if print_summary:
+            print(model.summary())
         X_test_sm = sm.add_constant(X_test, has_constant='add')
-    
-        # Predictions
         y_train_pred = model.predict(X_train_sm)
         y_test_pred = model.predict(X_test_sm)
     elif model_type == 'lasso':
@@ -172,19 +286,19 @@ def advanced_linear_regression(X, y, model_type='linear', make_plots = True, alp
         model.fit(X_train, y_train)
         y_train_pred = model.predict(X_train)
         y_test_pred = model.predict(X_test)
-        print(f"Optimal alpha for Lasso: {model.alpha_}")
-        
+        if print_summary:
+            print(f"Optimal alpha for Lasso: {model.alpha_}")
     elif model_type == 'ridge':
         model = RidgeCV(alphas=alphas, scoring='neg_mean_squared_error', cv=cv_folds)
         model.fit(X_train, y_train)
         y_train_pred = model.predict(X_train)
         y_test_pred = model.predict(X_test)
-        print(f"Optimal alpha for Ridge: {model.alpha_}")
-        
+        if print_summary:
+            print(f"Optimal alpha for Ridge: {model.alpha_}")
     else:
         raise ValueError("Invalid model_type. Choose 'linear', 'lasso', or 'ridge'.")
 
-   
+    # Calculate metrics
     metrics = {
         'train_mse': mean_squared_error(y_train, y_train_pred),
         'train_r2': r2_score(y_train, y_train_pred),
@@ -196,87 +310,25 @@ def advanced_linear_regression(X, y, model_type='linear', make_plots = True, alp
     print("Training MSE:", metrics['train_mse'], "Training R2:", metrics['train_r2'], "Training Pearson Correlation:", metrics['train_pearson'])
     print("Testing MSE:", metrics['test_mse'], "Testing R2:", metrics['test_r2'], "Testing Pearson Correlation:", metrics['test_pearson'])
 
+    # Perform cross-validation if specified
     if cross_validate:
+        from sklearn.model_selection import cross_val_score
         cv_scores = cross_val_score(model, X, y, cv=cv_folds, scoring='neg_mean_squared_error')
         cv_mse = -cv_scores
         print(f"Cross-Validation MSE: {cv_mse.mean()} ± {cv_mse.std()}")
 
+    # Optionally make plots
     if make_plots:
         plot_residuals(y_train, y_train_pred, title=f'Residuals {model_type.capitalize()} Regression Train')
         plot_actual_vs_predicted_(y_train, y_train_pred, title=f'Actual vs Predicted {model_type.capitalize()} Regression Train')
         plot_residuals(y_test, y_test_pred, title=f'Residuals {model_type.capitalize()} Regression Test')
         plot_actual_vs_predicted_(y_test, y_test_pred, title=f'Actual vs Predicted {model_type.capitalize()} Regression Test')
 
+    # Return metrics and optionally the model
+    if return_model:
+        return metrics, model
     return metrics
-    
-def advanced_linear_regression_with_model(X, y, model_type='linear', alphas=np.logspace(-4, 4, 100), scale_data=True, test_size=0.3, random_state=66, cross_validate=False, cv_folds=5):
- 
-    # Here we are splitting the data by importing train_test_split function from the python library
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
-
-    # Option to choose scaling.Generally scaling is a good practice before performing a linear regression  
-    if scale_data:
-        scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_test = scaler.transform(X_test)
-
-    # Selecting the model and training the data set
-    if model_type == 'linear':
-        # Add constant to training data
-        X_train_sm = sm.add_constant(X_train, has_constant='add')
-        model = sm.OLS(y_train, X_train_sm).fit()
-    
-        # Print the summary of the model
-        print(model.summary())
-    
-        # Add constant to test data and ensure columns align
-        X_test_sm = sm.add_constant(X_test, has_constant='add')
-    
-        # Predictions
-        y_train_pred = model.predict(X_train_sm)
-        y_test_pred = model.predict(X_test_sm)
-    elif model_type == 'lasso':
-        model = LassoCV(alphas=alphas, cv=cv_folds, random_state=random_state)
-        model.fit(X_train, y_train)
-        y_train_pred = model.predict(X_train)
-        y_test_pred = model.predict(X_test)
-        print(f"Optimal alpha for Lasso: {model.alpha_}")
-        
-    elif model_type == 'ridge':
-        model = RidgeCV(alphas=alphas, scoring='neg_mean_squared_error', cv=cv_folds)
-        model.fit(X_train, y_train)
-        y_train_pred = model.predict(X_train)
-        y_test_pred = model.predict(X_test)
-        print(f"Optimal alpha for Ridge: {model.alpha_}")
-        
-    else:
-        raise ValueError("Invalid model_type. Choose 'linear', 'lasso', or 'ridge'.")
-
    
-    metrics = {
-        'train_mse': mean_squared_error(y_train, y_train_pred),
-        'train_r2': r2_score(y_train, y_train_pred),
-        'test_mse': mean_squared_error(y_test, y_test_pred),
-        'test_r2': r2_score(y_test, y_test_pred),
-        'train_pearson': pearsonr(y_train, y_train_pred)[0],
-        'test_pearson': pearsonr(y_test, y_test_pred)[0],
-        'model': model 
-    }
-    print("Training MSE:", metrics['train_mse'], "Training R2:", metrics['train_r2'], "Training Pearson Correlation:", metrics['train_pearson'])
-    print("Testing MSE:", metrics['test_mse'], "Testing R2:", metrics['test_r2'], "Testing Pearson Correlation:", metrics['test_pearson'])
-
-    if cross_validate:
-        cv_scores = cross_val_score(model, X, y, cv=cv_folds, scoring='neg_mean_squared_error')
-        cv_mse = -cv_scores
-        print(f"Cross-Validation MSE: {cv_mse.mean()} ± {cv_mse.std()}")
-
-    
-    plot_residuals(y_train, y_train_pred, title=f'Residuals {model_type.capitalize()} Regression Train')
-    plot_actual_vs_predicted_(y_train, y_train_pred, title=f'Actual vs Predicted {model_type.capitalize()} Regression Train')
-    plot_residuals(y_test, y_test_pred, title=f'Residuals {model_type.capitalize()} Regression Test')
-    plot_actual_vs_predicted_(y_test, y_test_pred, title=f'Actual vs Predicted {model_type.capitalize()} Regression Test')
-
-    return metrics
 
 def assign_experience_level(df, new_reviewer_threshold, amateur_threshold):
     """
@@ -371,4 +423,46 @@ def get_season(date):
         return 'Summer'
     elif month in [9, 10, 11]:
         return 'Fall'
+
+
+def plot_coefficients(coefficients, conf_int, title, bar_color, ci_color='black'):
+    """
+    Plots the coefficients of a regression model as bars along with their confidence intervals.
+
+    Parameters:
+    coefficients (pandas.Series): The regression coefficients. The index should correspond to variable names, and   values should be the estimated coefficients.
+    conf_int (pandas.DataFrame): A DataFrame containing the lower and upper bounds of the confidence intervals for each coefficient. The first column should be the lower bound, and the second column should be the upper bound.
+    title (str): The title of the plot.
+    bar_color (str): The color of the bars representing the coefficient values.
+    ci_color (str): The color of the lines and shading representing the confidence intervals.
+
+    Returns:
+    None. Displays the coefficient plot with bars for coefficients and confidence intervals as error bars.
+    """
+    # exclude the constant term if present
+    if 'const' in coefficients.index:
+        coefficients = coefficients.drop('const')
+        conf_int = conf_int.drop('const')
+    
+    # extract confidence interval ranges
+    lower_error = coefficients - conf_int[0]
+    upper_error = conf_int[1] - coefficients
+    
+    # plot the coefficients as bars
+    plt.figure(figsize=(8, 6))
+    plt.bar(coefficients.index, coefficients.values, color=bar_color, alpha=0.8, label="Coefficient")
+    
+    # add confidence intervals as error bars
+    plt.errorbar(coefficients.index, coefficients.values, 
+                 yerr=[lower_error, upper_error], fmt='o', color=ci_color, label="95% CI")
+
+    plt.axhline(0, color='gray', linestyle='--', linewidth=1) # horizontal line at y=0 for reference
+    
+    plt.title(title)
+    plt.xticks(rotation=45, ha='right')
+    plt.ylabel("Coefficient value")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+    plt.close()
 
