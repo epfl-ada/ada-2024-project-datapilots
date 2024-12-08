@@ -11,10 +11,133 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.pipeline import Pipeline, make_pipeline
 from scipy.stats import pearsonr
-import statsmodels.api as sm  
+import statsmodels.api as sm 
+from wordcloud import WordCloud
+from PIL import Image
 
+def generate_wordcloud_from_series(series,title, mask_image_path=None, ax=None):  # Function for wordcloud maps
 
+    data_dict = series.to_dict()
+    
+    mask = None
+    if mask_image_path:
+        mask = np.array(Image.open(mask_image_path))
 
+    wordcloud = WordCloud(
+        background_color="white",
+        mask=mask,
+        contour_width=1,
+        contour_color="black",
+        colormap="viridis",
+        prefer_horizontal=0.9
+    ).generate_from_frequencies(data_dict)
+
+    ax.imshow(wordcloud, interpolation="bilinear")
+    ax.axis("off")
+    ax.set_title(title, fontsize=16)
+
+def region_mapping(merged_df):   # Function for adding region information to our data
+
+    country_region_mapping = {
+        # North America
+        'United States': 'North America',
+        'Canada': 'North America',
+    
+        # Western Europe
+        'England': 'Western Europe',
+        'Netherlands': 'Western Europe',
+        'Sweden': 'Western Europe',
+        'Germany': 'Western Europe',
+        'Belgium': 'Western Europe',
+        'Denmark': 'Western Europe',
+        'France': 'Western Europe',
+        'Scotland': 'Western Europe',
+        'Ireland': 'Western Europe',
+        'Wales': 'Western Europe',
+        'Northern Ireland': 'Western Europe',
+        'Switzerland': 'Western Europe',
+        'Austria': 'Western Europe',
+        'Iceland': 'Western Europe',
+        'Finland': 'Western Europe',
+        'Norway': 'Western Europe',
+    
+        # Southern Europe
+        'Italy': 'Southern Europe',
+        'Spain': 'Southern Europe',
+        'Portugal': 'Southern Europe',
+        'Greece': 'Southern Europe',
+        'Croatia': 'Southern Europe',
+        'Slovenia': 'Southern Europe',
+    
+        # Eastern Europe
+        'Poland': 'Eastern Europe',
+        'Russia': 'Eastern Europe',
+        'Hungary': 'Eastern Europe',
+        'Czech Republic': 'Eastern Europe',
+        'Romania': 'Eastern Europe',
+        'Estonia': 'Eastern Europe',
+        'Turkey': 'Eastern Europe',
+        'Serbia': 'Eastern Europe',
+        'Slovak Republic': 'Eastern Europe',
+        'Ukraine': 'Eastern Europe',
+        'Latvia': 'Eastern Europe',
+        'Lithuania': 'Eastern Europe',
+        'Bulgaria': 'Eastern Europe',
+        'Israel': 'Eastern Europe',
+        'South Africa': 'Eastern Europe',
+        
+        # Latin America
+        'Brazil': 'Latin America',
+        'Chile': 'Latin America',
+        'Argentina': 'Latin America',
+        'Mexico': 'Latin America',
+        'Puerto Rico': 'Latin America',
+    
+        # Eastern Asia
+        'Japan': 'Eastern Asia',
+        'China': 'Eastern Asia',
+        'South Korea': 'Eastern Asia',
+        'Taiwan': 'Eastern Asia',
+        'Hong Kong': 'Eastern Asia',
+        'Philippines': 'Eastern Asia',
+        'Thailand': 'Eastern Asia',
+        'India': 'Eastern Asia',
+        'Singapore': 'Eastern Asia',
+    
+        # Australia and Oceania
+        'Australia': 'Australia and Oceania',
+        'New Zealand': 'Australia and Oceania',
+    }
+    
+    countries = merged_df.columns.tolist()
+    
+    # Create a mapping DataFrame for countries and regions
+    country_region_df = pd.DataFrame({'country': countries})
+    country_region_df['region'] = country_region_df['country'].map(country_region_mapping)
+    
+    transposed_df = merged_df.T  # Now countries are rows, beer styles are columns
+    transposed_df['region'] = transposed_df.index.map(country_region_mapping)    # Add the region information
+    merged_with_regions = transposed_df.T
+
+    # Reordering the countries based on their region so that they are lined up together 
+    country_columns = list(merged_with_regions.columns)
+    regions = [(country, country_region_mapping.get(country, 'Other')) for country in country_columns]
+    regions_sorted = sorted(regions, key=lambda x: (x[1], x[0]))     # Sort by region, then alphabetically within the region
+    
+    sorted_country_columns = [country for country, region in regions_sorted]
+    merged_with_regions = merged_with_regions[sorted_country_columns]
+    region_order = list(dict.fromkeys(country_region_mapping.values()))
+    
+    country_region_df = pd.DataFrame({'country': list(country_region_mapping.keys())})
+    country_region_df['region'] = country_region_df['country'].map(country_region_mapping)
+    
+    country_region_df['region_order'] = country_region_df['region'].map(lambda r: region_order.index(r))
+    country_region_df_sorted = country_region_df.sort_values(by='region_order')
+    
+    sorted_countries = country_region_df_sorted['country'].tolist()
+    merged_with_regions_sorted = merged_with_regions[sorted_countries]
+    
+    return country_region_mapping, merged_with_regions_sorted
 
 def plot_hist(attributes,ba_ratings_loc_filtered_no_missing,name):
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
@@ -69,7 +192,7 @@ def plot_over_time(agg_data,regions,styles):
     plt.grid()
     plt.show()
     
-def plot_3D_scatter(subset_df):
+def plot_3D_scatter(subset_df,title):
 
     x_labels = subset_df.index        # Beer styles on the x-axis
     y_labels = subset_df.columns      # Countries on the y-axis
@@ -89,7 +212,7 @@ def plot_3D_scatter(subset_df):
     ax.set_xlabel('Beer Styles', labelpad=20)
     ax.set_ylabel('Countries', labelpad=20)
     ax.set_zlabel('Log(Number of Ratings)', labelpad=10)
-    ax.set_title('3D Scatter Plot of Ratings by Beer Style and Country (Log Scale) - Most Common Countries')
+    ax.set_title(title)
     
     ax.set_xticks(np.arange(0, len(x_labels), 5))
     ax.set_xticklabels(x_labels[::5], rotation=45, ha='right', fontsize=8)
