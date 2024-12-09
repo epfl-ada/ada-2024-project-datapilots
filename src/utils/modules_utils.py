@@ -17,7 +17,7 @@ from scipy.stats import ttest_1samp
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import LassoCV, RidgeCV
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.pipeline import Pipeline, make_pipeline
 from scipy.stats import pearsonr
