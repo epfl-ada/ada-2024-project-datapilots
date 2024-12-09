@@ -11608,3 +11608,58 @@ Notes:
 [2] The smallest eigenvalue is 5.82e-31. This might indicate that there are
 strong multicollinearity problems or that the design matrix is singular.
 
+Summary for United States:
+Summary for Northern Ireland:
+Summary for England:
+Summary for Ireland:
+Summary for Serbia:
+Summary for Spain:
+Summary for Romania:
+Summary for Australia:
+Summary for Canada:
+Summary for Austria:
+Summary for Switzerland:
+Summary for Slovenia:
+Summary for Sweden:
+Summary for Germany:
+Summary for France:
+Summary for South Africa:
+Summary for Scotland:
+Summary for Denmark:
+Summary for Hong Kong:
+Summary for Italy:
+Summary for Russia:
+Summary for Thailand:
+Summary for Brazil:
+Summary for Poland:
+Summary for Netherlands:
+Summary for Wales:
+Summary for Czech Republic:
+Summary for Belgium:
+Summary for Greece:
+Summary for Norway:
+Summary for Singapore:
+Summary for Ukraine:
+Summary for China:
+Summary for Philippines:
+Summary for Japan:
+Summary for Finland:
+Summary for Taiwan:
+Summary for Estonia:
+Summary for Mexico:
+Summary for Lithuania:
+Summary for Croatia:
+Summary for Portugal:
+Summary for Hungary:
+Summary for Bulgaria:
+Summary for Puerto Rico:
+Summary for Latvia:
+Summary for Turkey:
+Summary for Israel:
+Summary for Argentina:
+Summary for Iceland:
+Summary for India:
+Summary for Chile:
+Summary for Slovak Republic:
+Summary for New Zealand:
+Summary for South Korea:
