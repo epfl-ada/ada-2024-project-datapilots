@@ -431,8 +431,9 @@ def advanced_linear_regression(X, y, model_type='linear', make_plots=True, alpha
         'train_pearson': pearsonr(y_train, y_train_pred)[0],
         'test_pearson': pearsonr(y_test, y_test_pred)[0]
     }
-    print("Training MSE:", metrics['train_mse'], "Training R2:", metrics['train_r2'], "Training Pearson Correlation:", metrics['train_pearson'])
-    print("Testing MSE:", metrics['test_mse'], "Testing R2:", metrics['test_r2'], "Testing Pearson Correlation:", metrics['test_pearson'])
+    if print_summary:
+        print("Training MSE:", metrics['train_mse'], "Training R2:", metrics['train_r2'], "Training Pearson Correlation:", metrics['train_pearson'])
+        print("Testing MSE:", metrics['test_mse'], "Testing R2:", metrics['test_r2'], "Testing Pearson Correlation:", metrics['test_pearson'])
 
     # Perform cross-validation if specified
     if cross_validate:
