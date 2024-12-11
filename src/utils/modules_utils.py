@@ -8,7 +8,9 @@ from scipy import stats
 import scipy.stats as st
 import glob
 import warnings
-import statsmodels.api as sm  
+import statsmodels.api as sm 
+from scipy.stats import shapiro
+
 
 from wordcloud import WordCloud
 from PIL import Image
@@ -22,6 +24,7 @@ from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.pipeline import Pipeline, make_pipeline
 from scipy.stats import pearsonr
 from scipy.stats import f_oneway
+
 from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
 from sklearn.cluster import KMeans
