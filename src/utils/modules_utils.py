@@ -23,6 +23,8 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from scipy.stats import pearsonr
 from scipy.stats import f_oneway
 from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score
+from sklearn.cluster import KMeans
 
 
 from src.utils.data_utils import advanced_linear_regression
@@ -40,3 +42,8 @@ from src.utils.data_utils import top_10_predicted
 from src.utils.data_utils import plot_hist
 from src.utils.data_utils import region_mapping
 from src.utils.data_utils import generate_wordcloud_from_series
+from src.utils.data_utils import plot_pca_loadings
+from src.utils.data_utils import plot_PCA_2D_with_loadings
+from src.utils.data_utils import plot_clusters
+from src.utils.data_utils import silhoutte_inertia_plotting
+from src.utils.data_utils import plot_PCA_2D
