@@ -14,15 +14,24 @@ from scipy.stats import pearsonr
 import statsmodels.api as sm 
 from wordcloud import WordCloud
 from PIL import Image
+from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score
+from sklearn.cluster import KMeans
 
-def generate_wordcloud_from_series(series,title, mask_image_path=None, ax=None):  # Function for wordcloud maps
+def generate_wordcloud_from_series(series,title, mask_image_path=None, ax=None):
 
-    data_dict = series.to_dict()
+    """
+    Function for creating Wordcloud maps that uses pandas series dataframe
+    
+    """
+
+    data_dict = series.to_dict() # Pandas series dataframe to dictionary
     
     mask = None
     if mask_image_path:
         mask = np.array(Image.open(mask_image_path))
 
+    # Generate the workcloud 
     wordcloud = WordCloud(
         background_color="white",
         mask=mask,
@@ -36,7 +45,16 @@ def generate_wordcloud_from_series(series,title, mask_image_path=None, ax=None):
     ax.axis("off")
     ax.set_title(title, fontsize=16)
 
-def region_mapping(merged_df):   # Function for adding region information to our data
+def region_mapping(merged_df):   # Function for adding region information to our data  
+    
+    """
+    Sources: 
+              - https://worldinmaps.com/geography-and-geology/world-regions/
+              - https://vividmaps.com/world-map-region-definitions/
+    
+          Note: But eventually we have to change some countries regions (otherwise it some regions have only 1 countries)
+    
+    """
 
     country_region_mapping = {
         # North America
@@ -109,8 +127,8 @@ def region_mapping(merged_df):   # Function for adding region information to our
         'New Zealand': 'Australia and Oceania',
     }
     
-    countries = merged_df.columns.tolist()
-    
+    countries = merged_df.columns.tolist()  # Transforming column names to a list
+    """   
     # Create a mapping DataFrame for countries and regions
     country_region_df = pd.DataFrame({'country': countries})
     country_region_df['region'] = country_region_df['country'].map(country_region_mapping)
@@ -136,153 +154,23 @@ def region_mapping(merged_df):   # Function for adding region information to our
     
     sorted_countries = country_region_df_sorted['country'].tolist()
     merged_with_regions_sorted = merged_with_regions[sorted_countries]
+    """
+    # Extracting countries and map them to regions
+    countries = merged_df.columns.tolist()  # Transforming column names to a list
+    country_region_df = pd.DataFrame({'country': countries})
+    country_region_df['region'] = country_region_df['country'].map(country_region_mapping)
     
+    # Transposing the DataFrame and add region information
+    transposed_df = merged_df.T  # Now countries are rows, beer styles are columns
+    transposed_df['region'] = transposed_df.index.map(country_region_mapping)  # Add the region information
+    merged_with_regions = transposed_df.T
+    
+    # Reordering countries by their regions
+    regions_sorted = sorted(countries, key=lambda c: (country_region_mapping.get(c, 'Other'), c))  # Sort by region, then alphabetically
+    merged_with_regions_sorted = merged_with_regions[regions_sorted]
+
     return country_region_mapping, merged_with_regions_sorted
 
-def plot_hist(attributes,ba_ratings_loc_filtered_no_missing,name):
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-
-    for i, col in enumerate(attributes):
-        sns.histplot(ba_ratings_loc_filtered_no_missing[col],
-                     bins=int((ba_ratings_loc_filtered_no_missing[col].max() - ba_ratings_loc_filtered_no_missing[col].min()) / 0.05),
-                     kde=False, ax=axes[i // 2, i % 2])
-        axes[i // 2, i % 2].set_title(f"Distribution of {col} in {name}")
-        axes[i // 2, i % 2].set_xlabel(col)
-        axes[i // 2, i % 2].set_ylabel("Rating frequence")
-        axes[i // 2, i % 2].grid(True, linestyle='--', alpha=0.7)  
-    plt.tight_layout()
-    plt.show()
-    
-def top_10_predicted(top_10_styles,loc):
-
-    plt.figure(figsize=(12, 6))
-    for style in top_10_styles.index:
-        plt.plot(top_10_styles.columns, top_10_styles.loc[style], label=style)
-    
-    plt.title(f"Seasonal Trends in Predicted Ratings: {loc} 10 Beer Styles")
-    plt.xlabel("Season")
-    plt.ylabel("Predicted Rating")
-    plt.legend(title="Beer Style", bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout()
-    plt.show()
-    
-def plot_over_time(agg_data,regions,styles):
-
-    filtered_agg_data = agg_data[              # Filter `agg_data` to include only the selected regions and beer styles
-    (agg_data['user_location'].isin(regions)) &
-    (agg_data['style'].isin(styles))
-]
-
-    color_mapping = {regions[0]: 'darkblue',regions[1]: 'red',regions[2]: 'magenta'}
-    marker_mapping = {styles[0]: 'o',styles[1]: '^' }
-    
-    plt.figure(figsize=(14, 10))
-    for region in regions:
-        for style in styles:
-            subset = filtered_agg_data[(filtered_agg_data['user_location'] == region) & (filtered_agg_data['style'] == style)]
-            if len(subset) > 1:  # Ensure we have enough data points to plot a trend
-                color = color_mapping[region]  
-                marker = marker_mapping[style]     
-                plt.plot(subset['year'], subset['avg_rating'], marker=marker, label=f'{region} - {style}', color=color, linestyle='-')
-    
-    plt.xlabel("Year")
-    plt.ylabel("Average Rating")
-    plt.title("Regional Beer Style Preferences Over Time for American IPA and Pale Lager")
-    plt.legend(title="Region - Style", bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.grid()
-    plt.show()
-    
-def plot_3D_scatter(subset_df,title):
-
-    x_labels = subset_df.index        # Beer styles on the x-axis
-    y_labels = subset_df.columns      # Countries on the y-axis
-    x_pos, y_pos = np.meshgrid(range(len(x_labels)), range(len(y_labels)), indexing="ij")
-    z_values = subset_df.values       # Number of ratings on the z-axis
-    
-    x_pos_flat = x_pos.flatten()
-    y_pos_flat = y_pos.flatten()
-    z_values_log_flat = np.log10(z_values.flatten() + 1)  # Log scale to handle large ranges
-    
-    # Scatter plotting
-    
-    fig = plt.figure(figsize=(18, 10))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.view_init(elev=30, azim=45)
-    scatter = ax.scatter(x_pos_flat, y_pos_flat, z_values_log_flat, c=z_values_log_flat, cmap='viridis', s=50)
-    ax.set_xlabel('Beer Styles', labelpad=20)
-    ax.set_ylabel('Countries', labelpad=20)
-    ax.set_zlabel('Log(Number of Ratings)', labelpad=10)
-    ax.set_title(title)
-    
-    ax.set_xticks(np.arange(0, len(x_labels), 5))
-    ax.set_xticklabels(x_labels[::5], rotation=45, ha='right', fontsize=8)
-    ax.set_yticks(np.arange(0, len(y_labels), 5))
-    ax.set_yticklabels(y_labels[::5], fontsize=8)
-    
-    cbar = fig.colorbar(scatter, ax=ax, shrink=0.5, aspect=5, label='Log(Number of Ratings)')
-    
-    plt.show()
-
-def top_10_barh(data_x,data_y,title,color_,name):
-
-    plt.figure(figsize=(12, 6))
-    plt.barh(data_x, data_y, color=color_)
-    plt.title(f"{title} 10 Countries by Average Rating - {name}")
-    plt.xlabel("Average Rating")
-    plt.ylabel("Country")
-    plt.gca().invert_yaxis()
-    plt.tight_layout()
-    plt.show()
-    
-def top_10_plots(ba_top_10_user_locations,rb_top_10_user_locations,title):
-
-    fig, axes = plt.subplots(1, 2, figsize=(16, 8))
-
-    sns.barplot(x=ba_top_10_user_locations.values, y=ba_top_10_user_locations.index, ax=axes[0])
-    axes[0].set_title(f"Top 10 {title} in BeerAdvocate")
-    axes[0].set_xlabel("Count")
-    axes[0].set_ylabel(title)
-    axes[0].set_xscale("log")
-    
-    sns.barplot(x=rb_top_10_user_locations.values, y=rb_top_10_user_locations.index, ax=axes[1])
-    axes[1].set_title(f"Top 10 {title} in RateBeer")
-    axes[1].set_xlabel("Count")
-    axes[1].set_ylabel(title)
-    axes[1].set_xscale("log")
-    
-    plt.tight_layout()
-    plt.show()
-
-def calculate_trend(df): 
-    X = df['year'].values.reshape(-1, 1)
-    y = df['avg_rating'].values
-    if len(X) > 1:  # Need more than one year to calculate trend
-        model = LinearRegression()
-        model.fit(X, y)
-        trend = model.coef_[0] 
-    else:
-        trend = np.nan  # Not enough data to calculate trend
-    return trend
-
-
-def merge_data_(data):
-
-    style_country_counts = {}
-
-    unique_beer_styles = data['style'].unique()
-    
-    for style in unique_beer_styles:
-    
-        style_data = data[data['style'] == style]     # Filter data for the current beer style
-        
-        country_counts = style_data['user_location'].value_counts()       # Count the number of ratings by country for this style
-        
-        style_country_counts[style] = country_counts      # Store the result in the dictionary with the beer style as the key
-    
-    merged_df = pd.DataFrame(style_country_counts).transpose().fillna(0) # Convert the dictionary to a DataFrame
-
-    return merged_df
-    
 def plot_actual_vs_predicted_(y_actual, y_pred, title='Actual vs Predicted', cmap='Reds', line_color='red', line_style='--', alpha=0.8, point_size=30, fig_size=(6, 4)):
     """
     Plots a compraison of actual values and predicted values  from the chosen training model (linear, lasso or ridge).
@@ -590,3 +478,332 @@ def plot_coefficients(coefficients, conf_int, title, bar_color, ci_color='black'
     plt.show()
     plt.close()
 
+def calculate_trend(df):
+
+    """
+    Function for calculating and showing the  trends (slopes of linear regressions)
+    
+    """
+    
+    X = df['year'].values.reshape(-1, 1)
+    y = df['avg_rating'].values
+    if len(X) > 1:  # Need more than one year to calculate trend
+        model = LinearRegression()
+        model.fit(X, y)
+        trend = model.coef_[0] 
+    else:
+        trend = np.nan  # Not enough data to calculate trend
+    return trend
+
+
+def merge_data_(data):
+
+    """
+    Function for counting the beer styles appeared in the original BeerAdvocate and RateBeer databases for specific country
+    
+    """
+
+    style_country_counts = {}
+
+    unique_beer_styles = data['style'].unique()
+    
+    for style in unique_beer_styles:
+    
+        style_data = data[data['style'] == style]     # Filter data for the current beer style
+        
+        country_counts = style_data['user_location'].value_counts()       # Count the number of ratings by country for this style
+        
+        style_country_counts[style] = country_counts      # Store the result in the dictionary with the beer style as the key
+    
+    merged_df = pd.DataFrame(style_country_counts).transpose().fillna(0) # Convert the dictionary to a DataFrame
+
+    return merged_df
+
+
+
+################################################# Plotting functions for making main code more concise #################################################
+
+
+def plot_pca_loadings(loadingss,pc1_corr,pc2_corr):
+    
+    """
+    Function for plotting the PCA loadings
+    
+    """
+    
+    loadingss['PC1'].sort_values(ascending=False).head(20).plot(kind='bar', color='blue', alpha=0.7, label='PC1')
+    loadingss['PC2'].sort_values(ascending=False).head(20).plot(kind='bar', color='orange', alpha=0.7, label='PC2')
+    
+    
+    plt.title('Top 20 Beer Styles Contributing to Principal Components\n'
+              f'PC1 Correlation with Total Ratings: {pc1_corr:.2f}, '
+              f'PC2 Correlation with Total Ratings: {pc2_corr:.2f}')
+    plt.xlabel('Beer Styles')
+    plt.ylabel('Loading (Contribution)')
+    plt.legend()
+    plt.grid(alpha=0.3)
+    plt.show()
+
+def plot_PCA_2D_with_loadings(subset_df):
+
+    
+    """
+    Adjusted PCA plot function with the effect of number of ratings
+    
+    """
+    log_transformed_data = np.log10(subset_df.values + 1)           # Log-transform the data to handle large ranges (Adding 1 to avoid log(0)) 
+
+    # Perform PCA (countries as rows, beer styles as columns)
+    pca = PCA(n_components=2)
+    pca_transformed = pca.fit_transform(log_transformed_data.T)     # Transpose for countries
+
+    # Extract PCA loadings (beer style contributions)
+    beer_styles = subset_df.index
+    pca_loadings = pca.components_                                 # Shape: (n_components, n_features)
+    loadings_df = pd.DataFrame(pca_loadings.T, index=beer_styles, columns=['PC1', 'PC2'])
+
+    total_ratings = subset_df.sum(axis=1)                          # Total number of ratings per beer style
+
+    # Calculate the correlation between the number of ratings and PCA loadings
+    loadings_df['Total Ratings'] = total_ratings
+    pc1_corr = loadings_df[['PC1', 'Total Ratings']].corr().iloc[0, 1]
+    pc2_corr = loadings_df[['PC2', 'Total Ratings']].corr().iloc[0, 1]
+
+    plt.figure(figsize=(12, 8))
+
+    scatter = plt.scatter(
+        pca_transformed[:, 0], pca_transformed[:, 1],
+        c='blue', alpha=0.6, edgecolor='k', s=100
+    )
+
+    # Annotate countries on the scatter plot
+    for i, country in enumerate(subset_df.columns):
+        plt.annotate(country, (pca_transformed[i, 0], pca_transformed[i, 1]), fontsize=9, alpha=0.8)
+
+    plt.xlabel('Principal Component 1')
+    plt.ylabel('Principal Component 2')
+    plt.title('2D PCA Projection of European Countries Based on Log-Transformed Beer Ratings')
+    plt.grid(alpha=0.3)
+    
+    plt.figure(figsize=(12, 4))
+    plot_pca_loadings(loadings_df,pc1_corr,pc2_corr)
+
+    plt.tight_layout()
+    plt.show()
+    
+    return pca_transformed,loadings_df
+
+def plot_clusters(pca_transformed):
+
+    """
+    Function for plotting the clusters
+    
+    """
+    
+    for cluster in sorted(pca_transformed['Cluster'].unique()):                   # Cluster labels
+        cluster_data = pca_transformed[pca_transformed['Cluster'] == cluster]
+        plt.scatter(cluster_data['PC1'], cluster_data['PC2'], label=f"Cluster {cluster}", s=100)
+    
+    # Annotate countries
+    for _, row in pca_transformed.iterrows():
+        plt.annotate(row['Country'], (row['PC1'], row['PC2']), fontsize=9)
+    
+    plt.xlabel("Principal Component 1")
+    plt.ylabel("Principal Component 2")
+    plt.title("K-Means Clustering on PCA-Transformed Data")
+    plt.legend()
+    plt.grid(alpha=0.3)
+    plt.show()
+
+def silhoutte_inertia_plotting(cluster_range,pca_componentss):
+
+    """
+    Function for plotting the silhoutte widths and inertia scores
+    
+    """
+    
+    silhouette_scores = [] 
+    inertia_values = []
+    for n_clusters in cluster_range:                                            # Iterate through each number of clusters
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+        cluster_labels = kmeans.fit_predict(pca_componentss)
+        
+        silhouette_avg = silhouette_score(pca_componentss, cluster_labels)      # Compute silhouette score and inertia
+        inertia = kmeans.inertia_
+        silhouette_scores.append(silhouette_avg)
+        inertia_values.append(inertia)
+    
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plt.plot(cluster_range, silhouette_scores, marker='o', label='Silhouette Score')
+    plt.xlabel("Number of Clusters")
+    plt.ylabel("Silhouette Score")
+    plt.title("Silhouette Width Analysis")
+    plt.grid(alpha=0.3)
+    plt.legend()
+    
+    plt.subplot(1, 2, 2)
+    plt.plot(cluster_range, inertia_values, marker='o', label='Inertia (Elbow Method)', color='orange')
+    plt.xlabel("Number of Clusters")
+    plt.ylabel("Inertia")
+    plt.title("Elbow Method")
+    plt.grid(alpha=0.3)
+    plt.legend()
+    
+    plt.tight_layout()
+    plt.show()
+      
+def plot_over_time(agg_data,regions,styles):
+
+    """
+    Function for plotting the rating scores over time for chosen beer style in different countries
+    
+    """
+
+    filtered_agg_data = agg_data[(agg_data['user_location'].isin(regions)) & (agg_data['style'].isin(styles))]     # Filter `agg_data` to include only the selected regions and beer styles
+
+    color_mapping = {regions[0]: 'darkblue',regions[1]: 'red',regions[2]: 'magenta'}
+    marker_mapping = {styles[0]: 'o',styles[1]: '^' }
+    
+    plt.figure(figsize=(14, 10))
+    for region in regions:
+        for style in styles:
+            subset = filtered_agg_data[(filtered_agg_data['user_location'] == region) & (filtered_agg_data['style'] == style)]
+            if len(subset) > 1:  # Ensure we have enough data points to plot a trend
+                color = color_mapping[region]  
+                marker = marker_mapping[style]     
+                plt.plot(subset['year'], subset['avg_rating'], marker=marker, label=f'{region} - {style}', color=color, linestyle='-')
+    
+    plt.xlabel("Year")
+    plt.ylabel("Average Rating")
+    plt.title("Regional Beer Style Preferences Over Time for American IPA and Pale Lager")
+    plt.legend(title="Region - Style", bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.grid()
+    plt.show()
+    
+def plot_3D_scatter(subset_df,title):
+
+    """
+    Function for plotting the rating scores over time for chosen beer style in different countries
+    
+    """
+
+    x_labels = subset_df.index                            # Beer styles on the x-axis
+    y_labels = subset_df.columns                          # Countries on the y-axis
+    x_pos, y_pos = np.meshgrid(range(len(x_labels)), range(len(y_labels)), indexing="ij")
+    z_values = subset_df.values                           # Number of ratings on the z-axis
+    
+    x_pos_flat = x_pos.flatten()
+    y_pos_flat = y_pos.flatten()
+    z_values_log_flat = np.log10(z_values.flatten() + 1)  # Log scale to handle large ranges
+    
+    # Scatter plotting
+    
+    fig = plt.figure(figsize=(18, 10))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.view_init(elev=30, azim=45)
+    scatter = ax.scatter(x_pos_flat, y_pos_flat, z_values_log_flat, c=z_values_log_flat, cmap='viridis', s=50)
+    ax.set_xlabel('Beer Styles', labelpad=20)
+    ax.set_ylabel('Countries', labelpad=20)
+    ax.set_zlabel('Log(Number of Ratings)', labelpad=10)
+    ax.set_title(title)
+    
+    ax.set_xticks(np.arange(0, len(x_labels), 5))
+    ax.set_xticklabels(x_labels[::5], rotation=45, ha='right', fontsize=8)
+    ax.set_yticks(np.arange(0, len(y_labels), 5))
+    ax.set_yticklabels(y_labels[::5], fontsize=8)
+    
+    cbar = fig.colorbar(scatter, ax=ax, shrink=0.5, aspect=5, label='Log(Number of Ratings)')
+    
+    plt.show()
+
+def plot_PCA_2D(subset_df):
+
+    """
+    Function for plotting 2D PCA of the given 3D data without implementing logarithmic scaling
+    
+    """
+    # Convert the DataFrame into a matrix suitable for PCA
+    data_for_pca = subset_df.values.T                         # Transpose: countries as rows, beer styles as columns
+
+    # Perform PCA
+    pca = PCA(n_components=2)
+    pca_transformed = pca.fit_transform(data_for_pca)
+
+    # Plot the transformed data
+    plt.figure(figsize=(12, 8))
+    scatter = plt.scatter(pca_transformed[:, 0], pca_transformed[:, 1], c='blue', alpha=0.6, edgecolor='k', s=100)
+
+    for i, country in enumerate(subset_df.columns):
+        plt.annotate(country, (pca_transformed[i, 0], pca_transformed[i, 1]), fontsize=9, alpha=0.8)
+
+    plt.xlabel('Principal Component 1')
+    plt.ylabel('Principal Component 2')
+    plt.title('2D PCA Projection of European Countries Based on Beer Ratings')
+    plt.grid(alpha=0.3)
+    plt.show()
+
+def top_10_predicted(top_10_styles,loc):
+    
+    """
+    Function for plotting the top 10 beer style for seasonal trends
+    
+    """
+
+    plt.figure(figsize=(12, 6))
+    for style in top_10_styles.index:
+        plt.plot(top_10_styles.columns, top_10_styles.loc[style], label=style)
+    
+    plt.title(f"Seasonal Trends in Predicted Ratings: {loc} 10 Beer Styles")
+    plt.xlabel("Season")
+    plt.ylabel("Predicted Rating")
+    plt.legend(title="Beer Style", bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    plt.show()
+  
+def plot_hist(attributes,ba_ratings_loc_filtered_no_missing,name):
+    
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+    for i, col in enumerate(attributes):
+        sns.histplot(ba_ratings_loc_filtered_no_missing[col],
+                     bins=int((ba_ratings_loc_filtered_no_missing[col].max() - ba_ratings_loc_filtered_no_missing[col].min()) / 0.05),
+                     kde=False, ax=axes[i // 2, i % 2])
+        axes[i // 2, i % 2].set_title(f"Distribution of {col} in {name}")
+        axes[i // 2, i % 2].set_xlabel(col)
+        axes[i // 2, i % 2].set_ylabel("Rating frequence")
+        axes[i // 2, i % 2].grid(True, linestyle='--', alpha=0.7)  
+    plt.tight_layout()
+    plt.show()
+  
+def top_10_barh(data_x,data_y,title,color_,name):
+
+    plt.figure(figsize=(12, 6))
+    plt.barh(data_x, data_y, color=color_)
+    plt.title(f"{title} 10 Countries by Average Rating - {name}")
+    plt.xlabel("Average Rating")
+    plt.ylabel("Country")
+    plt.gca().invert_yaxis()
+    plt.tight_layout()
+    plt.show()
+    
+def top_10_plots(ba_top_10_user_locations,rb_top_10_user_locations,title):
+
+    fig, axes = plt.subplots(1, 2, figsize=(16, 8))
+
+    sns.barplot(x=ba_top_10_user_locations.values, y=ba_top_10_user_locations.index, ax=axes[0])
+    axes[0].set_title(f"Top 10 {title} in BeerAdvocate")
+    axes[0].set_xlabel("Count")
+    axes[0].set_ylabel(title)
+    axes[0].set_xscale("log")
+    
+    sns.barplot(x=rb_top_10_user_locations.values, y=rb_top_10_user_locations.index, ax=axes[1])
+    axes[1].set_title(f"Top 10 {title} in RateBeer")
+    axes[1].set_xlabel("Count")
+    axes[1].set_ylabel(title)
+    axes[1].set_xscale("log")
+    
+    plt.tight_layout()
+    plt.show()
+########################################################################################################################################################
+  
