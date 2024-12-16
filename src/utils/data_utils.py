@@ -6,10 +6,12 @@ import seaborn as sns
 from scipy.stats import ttest_rel
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import LassoCV, RidgeCV
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.neighbors import NearestNeighbors
 from scipy.stats import pearsonr
 import statsmodels.api as sm 
 from wordcloud import WordCloud
@@ -340,7 +342,7 @@ def advanced_linear_regression(X, y, model_type='linear', make_plots=True, alpha
     # Return metrics and  the model
         
     return metrics, model
-   
+
 
 def assign_experience_level(df, new_reviewer_threshold, amateur_threshold):
     """
