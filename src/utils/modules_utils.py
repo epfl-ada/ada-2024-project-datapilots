@@ -47,3 +47,9 @@ from src.utils.data_utils import plot_PCA_2D_with_loadings
 from src.utils.data_utils import plot_clusters
 from src.utils.data_utils import silhoutte_inertia_plotting
 from src.utils.data_utils import plot_PCA_2D
+from src.utils.data_utils import fit_logistic_regression_multi_output
+from src.utils.data_utils import match_reviews
+from src.utils.data_utils import standardize_pair
+from src.utils.data_utils import compare_countries_bidirectional
+from src.utils.data_utils import plot_pvalues
+from src.utils.data_utils import plot_top_10_pairs_boxplot

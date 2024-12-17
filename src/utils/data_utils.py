@@ -2,6 +2,7 @@ import pandas as pd
 import re
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.lines import Line2D
 import seaborn as sns
 from scipy.stats import ttest_rel
 from sklearn.model_selection import train_test_split, cross_val_score
@@ -19,6 +20,7 @@ from PIL import Image
 from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
 from sklearn.cluster import KMeans
+from bisect import bisect_left
 
 def generate_wordcloud_from_series(series,title, mask_image_path=None, ax=None):
 
@@ -807,5 +809,331 @@ def top_10_plots(ba_top_10_user_locations,rb_top_10_user_locations,title):
     
     plt.tight_layout()
     plt.show()
+
+
+def fit_logistic_regression_multi_output(X, Y, scale_data=True):
+    """
+    Fits multiple logistic regression models to the provided features and one-hot encoded target variable.
+
+    parameters:
+    X (pandas.DataFrame): feature matrix
+    Y (pandas.DataFrame): target variable matrix (one-hot encoded)
+    scale_data (bool): standardize the features before fitting the model or not
+
+    returns:
+    models (dict): dictionary of the fitted logistic regression models, keyed by target category
+    propensity_scores (pandas.DataFrame): computed propensity scores for each instance and category
+    """
+    if scale_data:
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+    else:
+        X_scaled = X
+
+    models = {}
+    propensity_scores = pd.DataFrame(index=Y.index)
+
+    # fit a logistic regression model for each country (column in Y)
+    for country in Y.columns:
+        model = LogisticRegression(max_iter=1000)
+        model.fit(X_scaled, Y[country])
+        models[country] = model
+        propensity_scores[country] = model.predict_proba(X_scaled)[:, 1]  # probability of being from 'country'
+
+    return models, propensity_scores
+
+
+
+def match_reviews(data, score_col='propensity_score', location_col='user_location', max_diff=0.05):
+    """
+    Match reviews based on their propensity scores.
+    
+    Each review (row in data) should be matched to another review:
+    - with a propensity score difference smaller than max_diff
+    - with a different user_location
+    - if multiple possible matches are found, choose the one with the smallest difference
+    - if no suitable match is found, discard the review
+    - each review can be paired only once
+
+    parameters:
+    data (pandas.DataFrame): dataframe containing at least two columns: user_location and propensity_score, where each row corresponds to a review
+    score_col (str): name of the column containing the propensity scores
+    location_col (str): name of the column containing the value of user_location
+    max_diff (float): maximum allowed difference in propensity scores for matching
+
+    returns:
+    matched_df (pd.DataFrame): dataframe of matched pairs, with the columns from the original dataframe
+    and matched rows; unmatched reviews are not included
+    """
+
+    # sort the data by propensity score for efficient searching
+    data_sorted = data.sort_values(by=score_col).reset_index(drop=True)
+
+    scores = data_sorted[score_col].values
+    locations = data_sorted[location_col].values
+    n = len(data_sorted)
+
+    used = set() # keeps track of reviews that have already been matched
+    matched_rows = []
+
+    # iterate over each review and try to find the closest match
+    for i in range(n):
+        if i in used:
+            continue # skip review if it's already matched
+        
+        current_score = scores[i]
+        current_loc = locations[i]
+
+        # use binary search to find the position where current_score would be inserted to maintain the sorted order, 
+        # giving you index close to where similar scores are located
+        pos = bisect_left(scores, current_score)
+
+        best_match = None
+        best_diff = max_diff
+
+        # move left (towards lower scores) from pos to find suitable matches within max_diff of current_score,
+        # updating best_match if a closer match is found
+        j = pos - 1
+        while j >= 0 and (current_score - scores[j]) <= max_diff:
+            if j not in used and locations[j] != current_loc:
+                diff = abs(current_score - scores[j])
+                if diff < best_diff:
+                    best_diff = diff
+                    best_match = j
+            j -= 1
+
+        # move right (towards higher scores) from pos, again looking for close matches and updating best_match
+        # if a better candidate is found
+        j = pos
+        while j < n and (scores[j] - current_score) <= max_diff:
+            if j not in used and j != i and locations[j] != current_loc:
+                diff = abs(current_score - scores[j])
+                if diff < best_diff:
+                    best_diff = diff
+                    best_match = j
+            j += 1
+
+        # if a suitable match is found, record it
+        if best_match is not None:
+            used.add(i)
+            used.add(best_match)
+            # combine the two matched rows into one
+            matched_pair = pd.concat(
+                [data_sorted.iloc[i], data_sorted.iloc[best_match].add_suffix('_matched')],
+                axis=0
+            )
+            matched_rows.append(matched_pair)
+
+    if len(matched_rows) == 0:
+        return pd.DataFrame()
+
+    matched_df = pd.DataFrame(matched_rows)
+    return matched_df
+
+
+def standardize_pair(row):
+    """
+    Given a row with 'user_location', 'user_location_matched', 'rating', and 'rating_matched' columns, 
+    ensures a consistent ordering of country pairs (alphabetically sorted) and adjusts the ratings accordingly
+    so that the first listed country always corresponds to 'std_rating' and the second to 'std_rating_matched'.
+    """
+    loc1, loc2 = row['user_location'], row['user_location_matched']
+    if loc1 > loc2:
+        # swap countries and associated ratings
+        return pd.Series({
+            'user_location': loc2,
+            'user_location_matched': loc1,
+            'rating': row['rating_matched'],
+            'rating_matched': row['rating']
+        })
+    else:
+        # already in correct alphabetical order
+        return pd.Series({
+            'user_location': loc1,
+            'user_location_matched': loc2,
+            'rating': row['rating'],
+            'rating_matched': row['rating_matched']
+        })
+
+
+def compare_countries_bidirectional(matched_data, test_func=ttest_rel):
+    """
+    Compares paired rating differences between all pairs of user locations, ensuring
+    that (A, B) and (B, A) are grouped together and that the rating difference direction is consistent.
+
+    parameters:
+    matched_data (pandas.DataFrame): a dataFrame containing matched reviews
+    (required columns: 'user_location', 'user_location_matched', 'rating', 'rating_matched')
+    test_func (function): the statistical paired test to use, eg ttest_rel
+
+    returns:
+    results (pandas.DataFrame): a dataframe with one row per unique country pair (in alphabetical order)
+    and columns for the test statistic, p-value, and sample size
+    """
+
+    df = matched_data.copy()
+    df['user_location'] = df['user_location'].astype(str)
+    df['user_location_matched'] = df['user_location_matched'].astype(str)
+
+    # apply the standardization function row-wise
+    standardized = df.apply(standardize_pair, axis=1)
+    df = pd.concat([df.drop(columns=['user_location', 'user_location_matched', 'rating', 'rating_matched']), standardized], axis=1)
+
+    # group by standardized country pairs
+    grouped = df.groupby(['user_location', 'user_location_matched'], dropna=False)
+    results = []
+
+    for (loc1, loc2), group in grouped:
+        if len(group) < 10:
+            continue  # not enough data for a meaningful test
+
+        # perform the paired test on rating vs rating_matched
+        t_stat, p_value = test_func(group['rating'], group['rating_matched'])
+
+        results.append({
+            'country_1': loc1,
+            'country_2': loc2,
+            'test_stat': t_stat,
+            'p_value': p_value,
+            'n_pairs': len(group)
+        })
+
+    return pd.DataFrame(results)
+
+
+def plot_pvalues(results_df, alpha=0.05, random_state=42):
+    """
+    Plots the p-values from the results dataframe for each country pair, adds a horizontal line at y=alpha, and labels only the p-values 
+    smaller than alpha with their corresponding country pairs. Also shuffles the rows of the dataframe to avoid placing points 
+    from the same first country consecutively, reducing label overlap.
+
+    Additionally:
+    - data points with p_value < alpha and test_stat > 0 are green
+    - Data points with p_value < alpha and test_stat < 0 are red
+    - other points are black
+
+    parameters:
+    results_df (pandas.DataFrame): dataframe returned by compare_countries_bidirectional
+    (expected columns: ['country_1', 'country_2', 'test_stat', 'p_value'])
+    alpha (float): significance level at which to draw the horizontal line (default 0.05)
+    random_state (int): seed for reproducible shuffling
+
+    returns:
+    None; displays the plot
+    """
+
+    # shuffle the rows of the dataframe
+    results_df = results_df.sample(frac=1, random_state=random_state).reset_index(drop=True)
+
+    # create a column that combines the country names for labeling
+    results_df['pair_label'] = results_df['country_1'] + ' vs ' + results_df['country_2']
+
+    # determine colors based on conditions
+    colors = []
+    for _, row in results_df.iterrows():
+        if row['p_value'] < alpha:
+            if row['test_stat'] > 0:
+                colors.append('green')
+            elif row['test_stat'] < 0:
+                colors.append('red')
+            else:
+                # if test_stat == 0 and p_value > alpha
+                colors.append('gray')
+        else:
+            colors.append('black')
+
+    fig, ax = plt.subplots(figsize=(22, 8))
+
+    # plot the p-values with assigned colors as a scatter plot
+    ax.scatter(results_df.index, results_df['p_value'], color=colors, s=50)
+
+    # draw a horizontal line at y=alpha
+    ax.axhline(y=alpha, color='black', linestyle='--', linewidth=1)
+
+    # label points with p-values < alpha
+    for i, row in results_df.iterrows():
+        if row['p_value'] < alpha:
+            ax.text(i, row['p_value'], row['pair_label'], 
+                    ha='center', va='bottom', rotation=90, fontsize=9)
+
+    # create legend
+    legend_elements = [
+        Line2D([0], [0], color='green', marker='o', linestyle='None', markersize=10, label='p < 0.05, test_stat > 0'),
+        Line2D([0], [0], color='red', marker='o', linestyle='None', markersize=10, label='p < 0.05, test_stat < 0'),
+        Line2D([0], [0], color='black', marker='o', linestyle='None', markersize=10, label='Other points'),
+        Line2D([0], [0], color='black', linestyle='--', linewidth=1, label=f'Alpha = {alpha}')
+    ]
+
+    ax.legend(handles=legend_elements, loc='upper right', fontsize=10)
+
+    ax.set_xlabel('Pair index')
+    ax.set_ylabel('p-value')
+    ax.set_title('p-values from test comparing the difference in final beer rating by country pair')
+
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+
+
+def plot_top_10_pairs_boxplot(matched_data, results_df):
+    """
+    Plots a boxplot of rating differences for the top 10 country pairs (smallest p-values) from the results_df. 
+    Each box represents the distribution of rating differences (rating - rating_matched) for one country pair.
+
+    parameters:
+    matched_data (pandas.DataFrame): contains matched reviews with columns:
+    ['user_location', 'user_location_matched', 'rating', 'rating_matched']
+    results_df (pandas.DataFrame): results of compare_countries_bidirectional, with columns:
+    ['country_1', 'country_2', 'test_stat', 'p_value', 'n_pairs']
+
+    the function:
+    1) sorts results_df by p_value and selects the top 10
+    2) standardizes matched_data so that each pair is represented consistently as (A, B) where A < B
+    3) filters matched_data to include only those top 10 pairs
+    4) plots the boxplot of rating differences
+    """
+    
+    # 1) get the top 10 country pairs by smallest p-value
+    top_10 = results_df.sort_values(by='p_value', ascending=True).head(10)
+    
+    # create a set of (country_1, country_2) tuples representing these pairs for easy filtering
+    top_10_pairs = set(zip(top_10['country_1'], top_10['country_2']))
+
+    # 2) standardize matched_data to ensure a consistent pair labeling
+    # standardize_pair should return columns: user_location, user_location_matched, rating, rating_matched
+    df = matched_data.copy()
+    standardized = df.apply(standardize_pair, axis=1)
+    df = pd.concat([df.drop(columns=['user_location', 'user_location_matched', 'rating', 'rating_matched']), standardized], axis=1)
+
+    # create a pair_label column for filtering and plotting
+    df['pair_label'] = df['user_location'] + ' vs ' + df['user_location_matched']
+
+    # create a tuple column to match with top_10_pairs
+    df['pair_tuple'] = list(zip(df['user_location'], df['user_location_matched']))
+
+    # 3) filter the dataframe to only include top 10 pairs
+    df_filtered = df[df['pair_tuple'].isin(top_10_pairs)].copy()
+
+    # compute the rating difference within pairs
+    df_filtered['rating_difference'] = df_filtered['rating'] - df_filtered['rating_matched']
+
+    # order pairs by p-value
+    pair_order = top_10.apply(lambda row: (row['country_1'], row['country_2']), axis=1).tolist()
+
+    # 4) plot boxplot 
+    plt.figure(figsize=(12, 6))
+    sns.boxplot(data=df_filtered, x='pair_label', y='rating_difference', 
+                order=[f"{a} vs {b}" for (a,b) in pair_order], color='orange')
+    
+    plt.axhline(y=0, color='gray', linestyle='--')
+    plt.title('Distribution of rating differences for top 10 country pairs by p-value')
+    plt.xlabel('Country pair')
+    plt.ylabel('Rating difference (country_1 - country_2)')
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+
+
 ########################################################################################################################################################
   
