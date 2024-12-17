@@ -47,21 +47,25 @@ To evaluate the overall importance of various beer attributes in determining the
 
 *Cultural biases*
 
-To see whether users from certain countries are more generous or more critical in their ratings compared to users from other countries, we use a logistic regression model where the dependent variable is the reviewer’s country, and the independent variables are confounders such as beer style, brewery average rating, total number of reviews from the user, and the average rating across all reviews by the user. The resulting propensity scores represent the likelihood of a review being associated with a particular country given these confounders. Using these propensity scores, we match individual reviews from reviewers in one country with reviews from reviewers in another country that have similar propensity scores. This matching ensures that the paired reviews are comparable in terms of confounders, so any differences in ratings are attributable to the reviewer’s country rather than other factors. Finally, we perform a multivariate regression analysis on the matched dataset, with the final rating from the review as the dependent variable and the independent variables including the country of the reviewer, beer style, brewery average rating, total number of reviews from the user, and average rating across all reviews by the user. This approach allows us to isolate and quantify the influence of the reviewer’s country on the final rating while controlling for confounders.
+To see whether users from certain countries are more generous or more critical in their ratings compared to users from other countries, we use a logistic regression model where the dependent variable is the reviewer’s country, and the independent variables are potentially relevant confounders, namely average rating for the beer style, brewery average rating, and the number of reviews given by the user. The resulting propensity scores represent the likelihood of a review being associated with a particular country given these confounders. Using these propensity scores, we match individual reviews from reviewers in one country with reviews from reviewers in another country that have similar propensity scores. This matching ensures that the paired reviews are comparable in terms of confounders, so that any differences in ratings are attributable to the reviewer’s country rather than other factors. We then compare paired rating differences between all pairs of user location. To achieve this, we group the matched reviews by country pairs and perform a paired t-test for each group to test whether the mean difference in ratings is significantly different from zero. Only country pairs with at least 10 matched reviews are included in the analysis.
+
+Our analysis suggests that, after accounting for confounders, users from certain countries rate more generously than others. Clear trends in rating differences for certain country pairs suggest a statistically and practically significant 'cultural bias' among beer reviewers, which may meaningfully impact beer reviews.
 
 *Beer origin bias*
 
-To assess whether users rate domestic beers higher than foreign ones, we first identify users who have rated both domestic and foreign beers and filter for the reviews from those users. We label each review as either domestic (reviewing a beer produced in the reviewer’s country) or foreign. For each user, we match their reviews of domestic and foreign beers to ensure that comparisons are made between beers reviewed by the same user. We then compute the difference in ratings between domestic and foreign beers for each matched pair. Finally, we perform a paired t-test to determine whether the mean difference in ratings is significantly different from zero. We repeat this analysis focusing only on reviews from beer enthusiasts—users who have written a substantial number of reviews—who might prioritize intrinsic qualities of the beers over external factors such as location.
+To assess whether users rate domestic beers higher than foreign ones, we first identify users who have rated both domestic and foreign beers and filter for the reviews from those users. We label each review as either domestic (reviewing a beer produced in the reviewer’s country) or foreign. For each user, we match their reviews of domestic and foreign beers to ensure that comparisons are made between beers reviewed by the same user. We also make sure that matched reviews review beers of the same style to account for the effect of beer style on ratings. We then perform a paired t-test to determine whether the mean difference in ratings within pairs is significantly different from zero. We repeat this analysis focusing only on reviews from beer enthusiasts —users who have written a substantial number of reviews— who might prioritize intrinsic qualities of the beers over external factors such as location.
 
 **Other biases**
 
 *Seasonal biases*
 
-To examine how seasonal changes influence the ratings of different beer styles, we use the time information contained in ratings to identify the season during which each rating was posted, taking into account the location of the user (Northern hemisphere, Southern hemisphere or equatorial area) to accurately determine the season. For simplicity, we only perform the analysis on users from the 10 countries with the highest number of reviews. We then perform a linear regression analysis with the final rating as the dependent variable and key predictors including season, beer style, user’s average rating, ABV, and the interaction between season and beer style to capture how seasonal effects vary across styles. The regression coefficients for the season variable reveal whether ratings are significantly higher or lower in certain seasons after accounting for confounders. Using these coefficients, we calculate predicted ratings for each beer style in each season and visualize the results with line charts, showing seasonal trends for different beer styles. This allows us to visualize how ratings fluctuate with the seasons and how these patterns differ by beer style.
+To examine how seasonal changes influence the ratings of different beer styles, we use the time information contained in ratings to identify the season during which each rating was posted, taking into account the location of the user (Northern hemisphere, Southern hemisphere or equatorial area) to accurately determine the season. For simplicity, we only perform the analysis on users from the 10 countries with the highest number of reviews. We then perform a linear regression analysis with the final rating as the dependent variable and key predictors, namely season, average rating for the beer style, average rating for the brewery, user’s average rating and ABV as the independent variables. The regression coefficients for the season variable reveal whether ratings are significantly higher or lower in certain seasons after accounting for confounders. Using these coefficients, we calculate predicted ratings for each beer style in each season and visualize the results with line charts, showing seasonal trends for different beer styles. This allows us to visualize how ratings fluctuate with the seasons and how these patterns differ by beer style.
 
 *Experience bias*
 
 To analyze how users’ rating tendencies evolve with experience, we focus on users who have posted a substantial number of reviews, based on a chosen threshold. For each user, we sort their reviews chronologically and assign an "experience level" to each rating based on the number of reviews they had posted up to that point. These levels are predefined and consistent across all users: new reviewer (first n reviews), amateur (from the n+1th to the oth review), and expert (from the o+1th review onward).To compare rating tendencies across all users, we fit a regression model to quantify the effect of experience level on ratings while adjusting for potential confounders. The dependent variable is the final rating, and the independent variables include experience level, the average rating for the beer style, the average rating for the brewery, and the average rating given by the user. The coefficients for the experience level provide insight into how ratings evolve with experience after accounting for confounders. To examine how ratings change within individual users, we perform a paired analysis. We match reviews labeled as “new reviewer” and “expert” within each user, ensuring the paired reviews correspond to the same beer style and brewery to control for confounders. We then use a paired t-test to determine whether the mean difference in ratings within these matched pairs is significant. This combination of regression modeling and paired analysis allows us to assess both overall trends and individual-level changes in rating behavior with experience.
+
+Both the linear regression and paired analysis show that user experience level has a statistically significant but numerically small effect on ratings, with more experienced users being slightly more critical. The small impact is reflected in the low regression coefficients and minimal mean differences in the paired analysis. Thus, while user experience level has a detectable influence on ratings, it is not the dominant factor driving rating behavior. Other factors, such as beer style, brewery reputation, and user generosity, play a much larger role.
 
 
 ### Proposed timeline:
@@ -79,22 +83,21 @@ To analyze how users’ rating tendencies evolve with experience, we focus on us
 ### Organization within the team:
 **Data loading:** Athénaïs
 
-**Data cleaning:** Orkun and Athénaïs
+**Data cleaning:** Athénaïs
 
 **Beer style preferences:** Orkun
 
 **Importance of specific beer attributes:** Samet
 
-**Cultural biases & Beer origin bias:** Begüm, Melis
+**Cultural biases:** Athénaïs
+
+**Beer origin bias:** Melis
 
 **Seasonal biases:** Begüm
 
 **Experience bias:** Athénaïs
 
 **Data story:** everyone (everyone will add complete the data story with elements related to the part they worked on)
-
-
-### Questions for TAs:
 
 
 ## Quickstart
@@ -129,7 +132,8 @@ The directory is organized in the following way:
 │   │   └── extract_rate_beer.py        <- Script to extract downloaded RateBeer data 
 │   ├── models                  <- Model directory
 │   ├── utils                   <- Utility directory
-│   │   └── data_utils.py               <- Helper functions used in results.ipynb
+│   │   ├── data_utils.py               <- Helper functions used in results.ipynb
+│   │   └── modules_utils.py            <- Imports required for results.ipynb
 │   ├── scripts                 <- Scripts directory
 │   │   └── review_parser.py            <- Script that processes each ratings.txt file by dividing it into parts, parsing each part, and
 │                                          saving as JSON
@@ -137,7 +141,8 @@ The directory is organized in the following way:
 ├── tests                       <- Tests of any kind
 │
 │
-├── results.ipynb               <- Notebook containing our analyses (calls helper functions from data_utils.py)
+├── results.ipynb               <- Notebook containing our analyses (calls helper functions from data_utils.py
+│                                  and imports utilities from modules_utils.py)
 │
 ├── .gitignore                  <- List of files ignored by git
 ├── pip_requirements.txt        <- File for installing python dependencies
