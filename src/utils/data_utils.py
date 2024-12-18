@@ -1172,5 +1172,71 @@ def plot_seasonal_heatmap(predicted_table):
 
     plt.show()
     plt.close()
+
+def plot_top_10_boxplot(df):
+    """
+    Plots a boxplot showing the distribution of (rating_domestic - rating_foreign) 
+    for the top 10 user_location_domestic values with the largest mean differences.
+
+    parameters:
+    df (panadas.DataFrame): dataframe with columns 'user_location_domestic', 'rating_domestic', and 'rating_foreign'
+
+    returns: None; displays a boxplot
+    """
+    # calculate rating differences
+    df['rating_difference'] = df['rating_domestic'] - df['rating_foreign']
+
+    # calculate mean differences for each user_location_domestic
+    mean_differences = df.groupby('user_location_domestic')['rating_difference'].mean()
+
+    # select the top 10 user_location_domestic with the largest mean differences in absolute value
+    top_10_locations = mean_differences.abs().nlargest(10).index
+    filtered_df = df[df['user_location_domestic'].isin(top_10_locations)]
+
+    # plot the boxplot
+    plt.figure(figsize=(12, 6))
+    sns.boxplot(
+        data=filtered_df, 
+        x='user_location_domestic', 
+        y='rating_difference', 
+        order=top_10_locations
+    )
+    
+    plt.axhline(y=0, color='gray', linestyle='--')
+    plt.title('Distribution of rating differences (domestic - foreign) for countries with the highest mean difference')
+    plt.xlabel('Country')
+    plt.ylabel('Rating difference (domestic - foreign)')
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+
+
+def match_domestic_foreign_reviews(df):
+    """
+    Matches domestic and foreign reviews on 'user_id' and 'style' from a given dataframe.
+
+    parameters:
+    df (pandas.DataFrame): input dataframe containing a 'domestic' column, 'user_id', and 'style'
+
+    returns:
+    matched_reviews (pandas.DataFrame): a dataframe with paired domestic and foreign reviews
+    """
+    # filter domestic reviews
+    domestic_reviews = df[df['domestic'] == True]
+    
+    # filter foreign reviews
+    foreign_reviews = df[df['domestic'] == False]
+    
+    # merge domestic and foreign reviews on 'user_id' and 'style' using an inner join
+    matched_reviews = pd.merge(
+        domestic_reviews, 
+        foreign_reviews, 
+        on=['user_id', 'style'], 
+        suffixes=('_domestic', '_foreign'), 
+        how='inner'
+    )
+    
+    return matched_reviews
 ########################################################################################################################################################
   

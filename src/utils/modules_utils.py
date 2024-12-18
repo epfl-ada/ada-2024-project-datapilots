@@ -54,3 +54,5 @@ from src.utils.data_utils import compare_countries_bidirectional
 from src.utils.data_utils import plot_pvalues
 from src.utils.data_utils import plot_top_10_pairs_boxplot
 from src.utils.data_utils import plot_seasonal_heatmap
+from src.utils.data_utils import plot_top_10_boxplot
+from src.utils.data_utils import match_domestic_foreign_reviews
