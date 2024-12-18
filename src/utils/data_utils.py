@@ -246,41 +246,35 @@ def plot_residuals(y_actual, y_pred, title='Residual Plot', cmap='coolwarm', lin
 
 def advanced_linear_regression(X, y, model_type='linear', make_plots=True, alphas=np.logspace(-4, 4, 100), 
                                scale_data=True, test_size=0.3, random_state=66, cross_validate=False, 
-                               cv_folds=5, print_summary=True):
+                               cv_folds=5, print_summary=True, return_scaler=False):
     """
     Trains and evaluates a regression model with options for scaling, cross-validation, and different model types.
-    Optionally prints model summary and returns the trained model.
+    Optionally prints model summary and returns the trained model and/or scaler.
 
     Parameters:
-    X (pandas dataframe or numpy array): Matrix of independent variables used to predict the target variable.
-    y (pandas dataframe or numpy array): Target variable vector.
-    model_type (str): Type of regression model to use. Options are 'linear', 'lasso', and 'ridge'. Default is 'linear'.
-    alphas (array): Array of alpha values for regularization, used for Lasso and Ridge regression.
-    scale_data (bool): Option to standardize features before training. Default is True.
-    test_size (float): Proportion of the dataset to include in the test split. Default is 0.3.
-    random_state (int): Seed for random number generator to ensure reproducibility. Default is 66.
-    cross_validate (bool): Whether to perform cross-validation. Defaults to False.
-    cv_folds (int): Number of cross-validation folds if cross_validate is True. Default is 5.
-    return_model (bool): Whether to return the trained model. Defaults to False.
-    print_summary (bool): Whether to print the model summary. Defaults to True.
+    X (pandas DataFrame or numpy array): Independent variables.
+    y (pandas DataFrame or numpy array): Target variable.
+    model_type (str): Type of regression model ('linear', 'lasso', 'ridge'). Default: 'linear'.
+    alphas (array): Alpha values for Lasso/Ridge. Default: logspace(-4,4,100).
+    scale_data (bool): Whether to standardize features before training. Default: True.
+    test_size (float): Test data proportion. Default: 0.3.
+    random_state (int): Seed for reproducibility. Default: 66.
+    cross_validate (bool): Perform cross-validation. Default: False.
+    cv_folds (int): CV folds if cross_validate=True. Default: 5.
+    print_summary (bool): Print model summary. Default: True.
+    return_scaler (bool): Return the scaler object if scaling is performed. Default: False.
 
     Returns:
-    dict: A dictionary containing training and testing metrics:
-        - 'train_mse': Mean squared error on the training set.
-        - 'train_r2': R-squared score on the training set.
-        - 'test_mse': Mean squared error on the test set.
-        - 'test_r2': R-squared score on the test set.
-        - 'train_pearson': Pearson correlation coefficient on the training set.
-        - 'test_pearson': Pearson correlation coefficient on the test set.
-    model (optional): The trained regression model if return_model=True.
-
-    Raises:
-    ValueError: If model_type is not one of 'linear', 'lasso', or 'ridge'.
+    dict: Dictionary containing training and testing metrics:
+        - 'train_mse', 'train_r2', 'train_pearson', 'test_mse', 'test_r2', 'test_pearson'
+    model: The trained regression model.
+    scaler (optional): The fitted scaler if return_scaler=True and scale_data=True.
     """
-
+    
     # Split the data
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
 
+    scaler = None
     # Optionally scale the data
     if scale_data:
         scaler = StandardScaler()
@@ -323,9 +317,14 @@ def advanced_linear_regression(X, y, model_type='linear', make_plots=True, alpha
         'train_pearson': pearsonr(y_train, y_train_pred)[0],
         'test_pearson': pearsonr(y_test, y_test_pred)[0]
     }
+
     if print_summary:
-        print("Training MSE:", metrics['train_mse'], "Training R2:", metrics['train_r2'], "Training Pearson Correlation:", metrics['train_pearson'])
-        print("Testing MSE:", metrics['test_mse'], "Testing R2:", metrics['test_r2'], "Testing Pearson Correlation:", metrics['test_pearson'])
+        print("Training MSE:", metrics['train_mse'], 
+              "Training R2:", metrics['train_r2'], 
+              "Training Pearson Correlation:", metrics['train_pearson'])
+        print("Testing MSE:", metrics['test_mse'], 
+              "Testing R2:", metrics['test_r2'], 
+              "Testing Pearson Correlation:", metrics['test_pearson'])
 
     # Perform cross-validation if specified
     if cross_validate:
@@ -341,9 +340,11 @@ def advanced_linear_regression(X, y, model_type='linear', make_plots=True, alpha
         plot_residuals(y_test, y_test_pred, title=f'Residuals {model_type.capitalize()} Regression Test')
         plot_actual_vs_predicted_(y_test, y_test_pred, title=f'Actual vs Predicted {model_type.capitalize()} Regression Test')
 
-    # Return metrics and  the model
-        
-    return metrics, model
+    # Return metrics and the model, plus scaler if requested and scaling was used
+    if return_scaler and scale_data:
+        return metrics, model, scaler
+    else:
+        return metrics, model
 
 
 def assign_experience_level(df, new_reviewer_threshold, amateur_threshold):
@@ -1135,5 +1136,41 @@ def plot_top_10_pairs_boxplot(matched_data, results_df):
     plt.close()
 
 
+def plot_seasonal_heatmap(predicted_table):
+    """
+    Plots a heatmap of predicted beer ratings across different seasons and beer styles.
+
+    parameters:
+    predicted_table (pandas.DataFrame): apivot table where rows are beer styles, columns are seasons, 
+    and values are predicted ratings
+        
+    returns:
+    None; displays the heatmap of predicted ratings
+    """
+    plt.figure(figsize=(14, 10))
+
+    # sort styles by their average predicted rating across seasons
+    sorted_styles = predicted_table.mean(axis=1).sort_values(ascending=False).index
+    sorted_table = predicted_table.loc[sorted_styles]
+
+    # create heatmap
+    sns.heatmap(
+        sorted_table,
+        annot=False,
+        cmap="coolwarm",
+        cbar_kws={'label': 'Predicted rating'},
+        linewidths=0.5,
+        linecolor='gray'
+    )
+
+    plt.title("Seasonal variations in predicted ratings by beer style", fontsize=18)
+    plt.xlabel("Season", fontsize=14)
+    plt.ylabel("Beer style", fontsize=14)
+    plt.xticks(fontsize=12, rotation=45)
+    plt.yticks(fontsize=10)
+    plt.tight_layout()
+
+    plt.show()
+    plt.close()
 ########################################################################################################################################################
   
