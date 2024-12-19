@@ -9,6 +9,7 @@ import scipy.stats as st
 import glob
 import warnings
 import statsmodels.api as sm  
+from scipy.stats import shapiro
 
 from wordcloud import WordCloud
 from PIL import Image
@@ -47,6 +48,10 @@ from src.utils.data_utils import plot_PCA_2D_with_loadings
 from src.utils.data_utils import plot_clusters
 from src.utils.data_utils import silhoutte_inertia_plotting
 from src.utils.data_utils import plot_PCA_2D
+from src.utils.data_utils import plot_regional_preferences
+from src.utils.data_utils import merge_data_with_counts_and_avg_ratings
+from src.utils.data_utils import reduce_data_to_3D
+from src.utils.data_utils import plot_top_styles_over_time
 from src.utils.data_utils import fit_logistic_regression_multi_output
 from src.utils.data_utils import match_reviews_propensity_score
 from src.utils.data_utils import standardize_pair
