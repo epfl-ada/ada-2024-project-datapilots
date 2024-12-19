@@ -985,7 +985,7 @@ def compare_countries_bidirectional(matched_data, test_func=ttest_rel):
     results = []
 
     for (loc1, loc2), group in grouped:
-        if len(group) < 10:
+        if len(group) < 20:
             continue  # not enough data for a meaningful test
 
         # perform the paired test on rating vs rating_matched
