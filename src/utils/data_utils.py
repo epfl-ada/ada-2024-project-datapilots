@@ -845,7 +845,7 @@ def fit_logistic_regression_multi_output(X, Y, scale_data=True):
 
 
 
-def match_reviews(data, score_col='propensity_score', location_col='user_location', max_diff=0.05):
+def match_reviews_propensity_score(data, score_col='propensity_score', location_col='user_location', max_diff=0.05):
     """
     Match reviews based on their propensity scores.
     
