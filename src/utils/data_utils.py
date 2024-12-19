@@ -132,33 +132,7 @@ def region_mapping(merged_df):   # Function for adding region information to our
     }
     
     countries = merged_df.columns.tolist()  # Transforming column names to a list
-    """   
-    # Create a mapping DataFrame for countries and regions
-    country_region_df = pd.DataFrame({'country': countries})
-    country_region_df['region'] = country_region_df['country'].map(country_region_mapping)
-    
-    transposed_df = merged_df.T  # Now countries are rows, beer styles are columns
-    transposed_df['region'] = transposed_df.index.map(country_region_mapping)    # Add the region information
-    merged_with_regions = transposed_df.T
 
-    # Reordering the countries based on their region so that they are lined up together 
-    country_columns = list(merged_with_regions.columns)
-    regions = [(country, country_region_mapping.get(country, 'Other')) for country in country_columns]
-    regions_sorted = sorted(regions, key=lambda x: (x[1], x[0]))     # Sort by region, then alphabetically within the region
-    
-    sorted_country_columns = [country for country, region in regions_sorted]
-    merged_with_regions = merged_with_regions[sorted_country_columns]
-    region_order = list(dict.fromkeys(country_region_mapping.values()))
-    
-    country_region_df = pd.DataFrame({'country': list(country_region_mapping.keys())})
-    country_region_df['region'] = country_region_df['country'].map(country_region_mapping)
-    
-    country_region_df['region_order'] = country_region_df['region'].map(lambda r: region_order.index(r))
-    country_region_df_sorted = country_region_df.sort_values(by='region_order')
-    
-    sorted_countries = country_region_df_sorted['country'].tolist()
-    merged_with_regions_sorted = merged_with_regions[sorted_countries]
-    """
     # Extracting countries and map them to regions
     countries = merged_df.columns.tolist()  # Transforming column names to a list
     country_region_df = pd.DataFrame({'country': countries})
@@ -524,10 +498,167 @@ def merge_data_(data):
 
     return merged_df
 
+def merge_data_with_counts_and_avg_ratings(data):
+    """
+    Function to aggregate beer style ratings and calculate both:
+    1. Number of ratings for each beer style from each country.
+    2. Average ratings for each beer style from each country.
 
+    Parameters:
+    - data: DataFrame containing columns `style`, `user_location`, `rating`.
+
+    Returns:
+    - merged_df: A pandas DataFrame where rows represent beer styles and columns represent countries,
+                 with two sub-columns for each country:
+                   - Number of ratings.
+                   - Average ratings.
+    """
+    style_country_data = {}
+
+    # Unique beer styles
+    unique_beer_styles = data['style'].unique()
+
+    for style in unique_beer_styles:
+
+        style_data = data[data['style'] == style]                                      # Filter data for the current beer style
+        
+        country_counts = style_data['user_location'].value_counts()                    # Calculate the number of ratings for each country
+
+
+        country_avg_ratings = style_data.groupby('user_location')['rating'].mean()     # Calculate the average rating for each country
+
+        style_country_data[style] = {
+            'count': country_counts,
+            'avg_rating': country_avg_ratings
+        }
+
+    # Combine counts and average ratings into a multi index data frame
+    count_df = pd.DataFrame({style: data['count'] for style, data in style_country_data.items()}).transpose().fillna(0)
+    avg_rating_df = pd.DataFrame({style: data['avg_rating'] for style, data in style_country_data.items()}).transpose().fillna(0)
+
+    # Add suffixes to differentiate columns
+    count_df.columns = [f"{col}_count" for col in count_df.columns]
+    avg_rating_df.columns = [f"{col}_avg_rating" for col in avg_rating_df.columns]
+
+    # Merge the two data frame along columns
+    merged_df = pd.concat([count_df, avg_rating_df], axis=1)
+
+    return merged_df
+
+def reduce_data_to_3D(dataframe):
+    """
+    Reduces a 4D dataset (count and average rating for each beer style) to 3D by calculating
+    the product of count and average rating for each beer style.
+
+    Returns:
+    - pd.DataFrame: Reduced dataframe with one column per beer style (count * avg_rating).
+    """
+    # Extract all beer style names
+    numeric_columns = [col for col in dataframe.columns if col.endswith('_count') or col.endswith('_avg_rating')]
+    beer_styles = list(set([col.split('_')[0] for col in numeric_columns if '_count' in col]))
+
+    # Initialize an empty DataFrame for reduced data
+    reduced_data = pd.DataFrame()
+
+    # Calculate count * avg_rating for each beer style
+    for beer_style in beer_styles:
+        count_col = f"{beer_style}_count"
+        rating_col = f"{beer_style}_avg_rating"
+        
+        if count_col in dataframe.columns and rating_col in dataframe.columns:
+            # Compute the product and store it in the reduced DataFrame
+            reduced_data[beer_style] = dataframe[count_col] * dataframe[rating_col]
+
+    return reduced_data
 
 ################################################# Plotting functions for making main code more concise #################################################
 
+def plot_top_styles_over_time(agg_data, clusters, pca_transformed,countries_by_cluster,top_beer_styles_by_cluster):
+
+
+    cluster_colors = {
+        0: 'blue',
+        1: 'orange',
+        2: 'green',
+        3: 'red',
+        4: 'purple'
+    }
+    
+    for cluster_id in sorted(pca_transformed['Cluster'].unique()):
+
+        #  Extracting countries in the current cluster and filtering the actual data accordingly
+        regions = countries_by_cluster[cluster_id][:]
+        styles = list(top_beer_styles_by_cluster[cluster_id][0:5].keys())
+    
+        filtered_agg_data = agg_data[(agg_data['user_location'].isin(regions)) & (agg_data['style'].isin(styles))]     # Filter `agg_data` to include only the selected regions and beer styles
+        filtered_agg_data = filtered_agg_data.groupby(['style', 'year']).agg(   #Data by Year, Region, and Beer Style
+        avg_rating=('avg_rating', 'mean'),
+        rating_count=('rating_count', 'size')   # Calculate the average rating per year, per region, and per beer style
+    ).reset_index()
+        plt.figure(figsize=(7, 5))
+        for style in styles:
+            subset = filtered_agg_data[(filtered_agg_data['style'] == style)]
+            if len(subset) > 1:  # Ensure we have enough data points to plot a trend
+                #color = color_mapping[region]  
+                #marker = marker_mapping[style]     
+                plt.plot(subset['year'], subset['avg_rating'], label=f'Cluster {cluster_id} - {style}',marker='^', linestyle='-',linewidth='2.0')
+    
+        plt.xlabel("Year")
+        plt.ylabel("Average Rating")
+        plt.title("Regional Beer Style Preferences Over Time for Their Top 5 Styles")
+        plt.legend(title="Region - Style", bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.grid()
+        plt.show()
+
+def plot_regional_preferences(pca_transformed,subset_df_):
+
+    # Define cluster colors from previous plot
+    cluster_colors = {
+        0: 'blue',
+        1: 'orange',
+        2: 'green',
+        3: 'red',
+        4: 'purple',
+        5: 'brown',
+        6: 'pink'
+    }
+    
+    top_beer_styles_by_cluster = {}
+    countries_by_cluster = {}
+    
+    # Create a combined figure
+    fig, axes = plt.subplots(1, max(pca_transformed['Cluster'].unique())+1, figsize=(20, 6), sharey=False)
+    fig.suptitle("Top 5 Beer Styles in Each Region(Cluster)", fontsize=16)
+    
+    for cluster_id in sorted(pca_transformed['Cluster'].unique()):
+        #  Extracting countries in the current cluster and filtering the actual data accordingly
+        cluster_countries = pca_transformed.loc[pca_transformed['Cluster'] == cluster_id, 'Country'].str.strip().tolist()
+        countries = [country for country in cluster_countries if country in subset_df_.columns] 
+        cluster_data = subset_df_[countries]
+        
+        cluster_data['average_number_of_ratings'] = cluster_data.mean(axis=1)                                # Calculate the average number of ratings for each beer style across countries
+        
+       
+        top_5_beer_styles = cluster_data['average_number_of_ratings'].sort_values(ascending=False).head(5)   # Sort the beer styles by average rating in descending order and select the top 5
+        
+        top_beer_styles_by_cluster[cluster_id] = top_5_beer_styles
+        countries_by_cluster[cluster_id] = cluster_countries
+    
+        top_5_beer_styles.plot(
+            kind='bar',
+            ax=axes[cluster_id],
+            color=cluster_colors[cluster_id],
+            alpha=0.7
+        )
+        axes[cluster_id].set_title(f"Cluster {cluster_id}")
+        axes[cluster_id].set_xlabel("Beer Styles")
+        axes[cluster_id].set_ylabel("Average Number of Rating" if cluster_id == 0 else "")
+        axes[cluster_id].set_xticklabels(top_5_beer_styles.index, rotation=45, ha='right')
+        axes[cluster_id].grid(alpha=0.3)
+    
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    plt.show()
+    return top_beer_styles_by_cluster,countries_by_cluster
 
 def plot_pca_loadings(loadingss,pc1_corr,pc2_corr):
     
@@ -536,11 +667,11 @@ def plot_pca_loadings(loadingss,pc1_corr,pc2_corr):
     
     """
     
-    loadingss['PC1'].sort_values(ascending=False).head(20).plot(kind='bar', color='blue', alpha=0.7, label='PC1')
-    loadingss['PC2'].sort_values(ascending=False).head(20).plot(kind='bar', color='orange', alpha=0.7, label='PC2')
+    loadingss['PC1'].sort_values(ascending=False).head(45).plot(kind='bar', color='blue', alpha=0.7, label='PC1')
+    loadingss['PC2'].sort_values(ascending=False).head(45).plot(kind='bar', color='orange', alpha=0.7, label='PC2')
     
     
-    plt.title('Top 20 Beer Styles Contributing to Principal Components\n'
+    plt.title('Top 45 Beer Styles Contributing to Principal Components\n'
               f'PC1 Correlation with Total Ratings: {pc1_corr:.2f}, '
               f'PC2 Correlation with Total Ratings: {pc2_corr:.2f}')
     plt.xlabel('Beer Styles')
@@ -549,7 +680,7 @@ def plot_pca_loadings(loadingss,pc1_corr,pc2_corr):
     plt.grid(alpha=0.3)
     plt.show()
 
-def plot_PCA_2D_with_loadings(subset_df):
+def plot_PCA_2D_with_loadings(subset_df,title):
 
     
     """
@@ -574,7 +705,7 @@ def plot_PCA_2D_with_loadings(subset_df):
     pc1_corr = loadings_df[['PC1', 'Total Ratings']].corr().iloc[0, 1]
     pc2_corr = loadings_df[['PC2', 'Total Ratings']].corr().iloc[0, 1]
 
-    plt.figure(figsize=(12, 8))
+    plt.figure(figsize=(10, 6))
 
     scatter = plt.scatter(
         pca_transformed[:, 0], pca_transformed[:, 1],
@@ -587,17 +718,17 @@ def plot_PCA_2D_with_loadings(subset_df):
 
     plt.xlabel('Principal Component 1')
     plt.ylabel('Principal Component 2')
-    plt.title('2D PCA Projection of European Countries Based on Log-Transformed Beer Ratings')
+    plt.title(title)
     plt.grid(alpha=0.3)
     
-    plt.figure(figsize=(12, 4))
+    plt.figure(figsize=(10, 6))
     plot_pca_loadings(loadings_df,pc1_corr,pc2_corr)
 
     plt.tight_layout()
     plt.show()
     
     return pca_transformed,loadings_df
-
+    
 def plot_clusters(pca_transformed):
 
     """
@@ -638,7 +769,7 @@ def silhoutte_inertia_plotting(cluster_range,pca_componentss):
         silhouette_scores.append(silhouette_avg)
         inertia_values.append(inertia)
     
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(9, 6))
     plt.subplot(1, 2, 1)
     plt.plot(cluster_range, silhouette_scores, marker='o', label='Silhouette Score')
     plt.xlabel("Number of Clusters")
@@ -670,7 +801,7 @@ def plot_over_time(agg_data,regions,styles):
     color_mapping = {regions[0]: 'darkblue',regions[1]: 'red',regions[2]: 'magenta'}
     marker_mapping = {styles[0]: 'o',styles[1]: '^' }
     
-    plt.figure(figsize=(14, 10))
+    plt.figure(figsize=(7, 5))
     for region in regions:
         for style in styles:
             subset = filtered_agg_data[(filtered_agg_data['user_location'] == region) & (filtered_agg_data['style'] == style)]
@@ -704,7 +835,7 @@ def plot_3D_scatter(subset_df,title):
     
     # Scatter plotting
     
-    fig = plt.figure(figsize=(18, 10))
+    fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d')
     ax.view_init(elev=30, azim=45)
     scatter = ax.scatter(x_pos_flat, y_pos_flat, z_values_log_flat, c=z_values_log_flat, cmap='viridis', s=50)
@@ -747,7 +878,6 @@ def plot_PCA_2D(subset_df):
     plt.title('2D PCA Projection of European Countries Based on Beer Ratings')
     plt.grid(alpha=0.3)
     plt.show()
-
 def top_10_predicted(top_10_styles,loc):
     
     """
