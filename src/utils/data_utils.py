@@ -1212,31 +1212,73 @@ def plot_top_10_boxplot(df):
     plt.close()
 
 
-def match_domestic_foreign_reviews(df):
+def match_reviews(df, filter_column, group1_value, group2_value, join_columns, suffixes=('_group1', '_group2')):
     """
-    Matches domestic and foreign reviews on 'user_id' and 'style' from a given dataframe.
+    Matches reviews from two groups in a given dataframe based on specified conditions.
 
     parameters:
-    df (pandas.DataFrame): input dataframe containing a 'domestic' column, 'user_id', and 'style'
+    df (pandas.DataFrame): input dataframe containing the filter column and matching keys
+    filter_column (str): column used to filter the two groups
+    group1_value: value in filter_column representing the first group
+    group2_value: value in filter_column representing the second group
+    join_columns (list): list of columns to use for matching rows
+    suffixes (tuple): suffixes for the matched columns (default: ('_group1', '_group2'))
 
     returns:
-    matched_reviews (pandas.DataFrame): a dataframe with paired domestic and foreign reviews
+    matched_reviews (pandas.DataFrame): a dataframe with paired reviews from the two groups
     """
-    # filter domestic reviews
-    domestic_reviews = df[df['domestic'] == True]
-    
-    # filter foreign reviews
-    foreign_reviews = df[df['domestic'] == False]
-    
-    # merge domestic and foreign reviews on 'user_id' and 'style' using an inner join
+    # add a unique ID to each review
+    df = df.reset_index() 
+    df['review_id'] = df.index
+
+    # filter for the two groups based on the filter_column
+    group1_reviews = df[df[filter_column] == group1_value]
+    group2_reviews = df[df[filter_column] == group2_value]
+
+    # merge the two groups on the specified join columns
     matched_reviews = pd.merge(
-        domestic_reviews, 
-        foreign_reviews, 
-        on=['user_id', 'style'], 
-        suffixes=('_domestic', '_foreign'), 
+        group1_reviews,
+        group2_reviews,
+        on=join_columns,
+        suffixes=suffixes,
         how='inner'
     )
-    
+
+    # drop duplicate matches based on unique IDs
+    matched_reviews = matched_reviews.drop_duplicates(subset=[f'review_id{suffixes[0]}'])
+    matched_reviews = matched_reviews.drop_duplicates(subset=[f'review_id{suffixes[1]}'])
+
     return matched_reviews
+
+
+def plot_rating_differences_histogram(data, diff_column, bins=30, color='orange', custom_title='Histogram of rating differences'):
+    """
+    Plots a histogram of rating differences with reference lines for zero and the mean.
+
+    parameters:
+    data (pandas.DataFrame): dataframe containing the rating differences
+    diff_column (str): column name for the rating differences
+    bins (int): number of bins for the histogram (default: 30)
+    color (str): color of the histogram bars (default: 'orange')
+    custom_title (str): custom title for the plot (default: 'Histogram of rating differences')
+
+    Returns: None; displays the plot.
+    """
+    # calculate the mean rating difference
+    mean_difference = data[diff_column].mean()
+
+    # plot the histogram
+    plt.figure(figsize=(6, 4))
+    sns.histplot(data[diff_column], bins=bins, color=color, kde=False)
+    plt.axvline(x=0, color='black', linestyle='--', label='Reference (0)')  # zero line
+    plt.axvline(x=mean_difference, color='blue', linestyle='-', label=f'Mean ({mean_difference:.2f})')  # mean line
+    plt.title(custom_title)
+    plt.xlabel('Rating Difference (Domestic - Foreign)')
+    plt.ylabel('Frequency')
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+    plt.close()
 ########################################################################################################################################################
   
