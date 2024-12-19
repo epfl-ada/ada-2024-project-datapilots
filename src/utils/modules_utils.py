@@ -48,7 +48,7 @@ from src.utils.data_utils import plot_clusters
 from src.utils.data_utils import silhoutte_inertia_plotting
 from src.utils.data_utils import plot_PCA_2D
 from src.utils.data_utils import fit_logistic_regression_multi_output
-from src.utils.data_utils import match_reviews
+from src.utils.data_utils import match_reviews_propensity_score
 from src.utils.data_utils import standardize_pair
 from src.utils.data_utils import compare_countries_bidirectional
 from src.utils.data_utils import plot_pvalues
