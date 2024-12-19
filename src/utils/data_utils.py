@@ -1173,7 +1173,7 @@ def plot_seasonal_heatmap(predicted_table):
     plt.show()
     plt.close()
 
-def plot_top_10_boxplot(df):
+def plot_top_10_boxplot(df, custom_title= 'Distribution of rating differences (domestic - foreign) for countries with the highest mean difference'):
     """
     Plots a boxplot showing the distribution of (rating_domestic - rating_foreign) 
     for the top 10 user_location_domestic values with the largest mean differences.
@@ -1203,7 +1203,7 @@ def plot_top_10_boxplot(df):
     )
     
     plt.axhline(y=0, color='gray', linestyle='--')
-    plt.title('Distribution of rating differences (domestic - foreign) for countries with the highest mean difference')
+    plt.title(custom_title)
     plt.xlabel('Country')
     plt.ylabel('Rating difference (domestic - foreign)')
     plt.xticks(rotation=90)
