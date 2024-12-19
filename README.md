@@ -134,25 +134,27 @@ The directory is organized in the following way:
 │
 ├── src                         <- Source code
 │   ├── data                    <- Data directory
-│   │   ├── download_files.py           <- Script to download data from Google Drive
-│   │   ├── extract_beer_advocate.py    <- Script to extract downloaded BeerAdvocate data
-│   │   └── extract_rate_beer.py        <- Script to extract downloaded RateBeer data 
+│   │   ├── data_loading_and_cleaning.py      <- Script to load the data, alter and clean it
+│   │   ├── download_files.py                 <- Script to download data from Google Drive
+│   │   ├── extract_beer_advocate.py          <- Script to extract downloaded BeerAdvocate data
+│   │   └── extract_rate_beer.py              <- Script to extract downloaded RateBeer data 
 │   ├── models                  <- Model directory
 │   ├── utils                   <- Utility directory
-│   │   ├── data_utils.py               <- Helper functions used in results.ipynb
-│   │   └── modules_utils.py            <- Imports required for results.ipynb
-│   ├── scripts                 <- Scripts directory
-│   │   └── review_parser.py            <- Script that processes each ratings.txt file by dividing it into parts, parsing each part, and
-│                                          saving as JSON
+│   │   ├── data_utils.py                     <- Helper functions used in results.ipynb
+│   │   └── modules_utils.py                  <- Imports required for results.ipynb
+│   ├── scripts                               <- Scripts directory
+│   │   └── review_parser.py                  <- Script that processes each ratings.txt file by dividing it into parts, parsing each part, and
+│                                                saving as JSON
 │
-├── tests                       <- Tests of any kind
+├── tests                          <- Tests of any kind
 │
 │
-├── results.ipynb               <- Notebook containing our analyses (calls helper functions from data_utils.py
+├── results.ipynb                  <- Notebook containing our analyses (calls helper functions from data_utils.py
 │                                  and imports utilities from modules_utils.py)
-│
-├── .gitignore                  <- List of files ignored by git
-├── pip_requirements.txt        <- File for installing python dependencies
+│── Data_Loading_Cleaning.ipynb    <- Notebook containing our data loading and cleaning analyses as separate file
+│ 
+├── .gitignore                     <- List of files ignored by git
+├── pip_requirements.txt           <- File for installing python dependencies
 └── README.md
 ```
 
