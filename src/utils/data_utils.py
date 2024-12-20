@@ -798,7 +798,7 @@ def plot_over_time(agg_data,regions,styles):
 
     filtered_agg_data = agg_data[(agg_data['user_location'].isin(regions)) & (agg_data['style'].isin(styles))]     # Filter `agg_data` to include only the selected regions and beer styles
 
-    color_mapping = {regions[0]: 'darkblue',regions[1]: 'red',regions[2]: 'magenta'}
+    color_mapping = {regions[0]: 'darkblue',regions[1]: 'red'}
     marker_mapping = {styles[0]: 'o',styles[1]: '^' }
     
     plt.figure(figsize=(7, 5))
@@ -816,7 +816,7 @@ def plot_over_time(agg_data,regions,styles):
     plt.legend(title="Region - Style", bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.grid()
     plt.show()
-    
+ 
 def plot_3D_scatter(subset_df,title):
 
     """

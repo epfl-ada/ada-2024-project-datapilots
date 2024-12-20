@@ -37,11 +37,15 @@ The dataset for this analysis comprises beer reviews collected from two popular 
 
 *Beer style preferences*
 
-We use the average rating of certain beer styles as features of a given country and use a clustering algorithm to determine if certain countries cluster together in terms of beer style preferences. We also use the time information contained in beer reviews to determine whether regional beer style preferences remain stable over time—supporting the hypothesis that they are influenced by culture—or if they fluctuate, suggesting other contributing factors.
+In this part, we examine how different beer styles are reviewed across different countries. We approach the features of our analysis in two scopes: first, we start with the number of ratings of certain beer styles as features of a given country to determine if certain countries cluster together in terms of beer style preferences. Secondly, we add average ratings of each beer style from each country as an additional feature to our previous data and then reduce this fourth dimensional dataframe to third dimensional one via merging these two features. Our initial analysis in P2 showed that we should group together the countries according to their actual regions since clustering dependent on Euclidean distances between these points. Then, we use principal component analysis to reduce 3D data into 2D mapping and via unsupervised clustering algorithm (K-means), we cluster the data. An optimal number of clusters are chosen according to Silhouette and Inertia scores(Elbow Method) to find a consistent one based on these two decision makers. After this step, regions are plotted with the PCA loadings. However, we cannot directly understand the regional beer preferences using PCA loadings; therefore, in each region, we found the top 5 beer styles according to averaged number of ratings and plot them as multiple bar plots. These plots demonstrate the distinctions in beer style preferences with showing some clear dominance of specific styles within each region that reflects cultural and regional brewing traditions.
+
+In the second part, we used the time information in reviews to determine if regional beer style preferences, which are found in the previous part, remain stable over time — supporting the hypothesis that they are influenced by culture — or if they fluctuate, suggesting other contributing factors. In fact, our analysis shows that most of the time regional beer style preferences in average show little change over time. However, there is also noticeable evolution in tastes over time for some beer styles in specific regions, likely driven by global beer trends and we give the American IPA vs Pale Lager example from North America region to demonstrate this result. In North America, time evolution of the average ratings reveals that American IPA ratings remain relatively stable for these countries, in contrast, Pale Lager ratings in these two countries increase constantly over time.
 
 *Importance of specific beer attributes*
 
-To evaluate the overall importance of various beer attributes in determining the final rating, we perform a linear regression analysis using attribute ratings as predictors and the final rating as the outcome variable, considering data from all countries combined. To account for potential confounders, the model also includes additional independent variables, specifically the average rating for the corresponding beer style and the average rating for the corresponding brewery. By comparing the coefficients of each attribute, we assess their relative influence on the final rating. To explore how the importance of these attributes varies across countries, we repeat the analysis for individual countries and examine the distribution of attribute coefficients across them.
+To evaluate the overall importance of various beer attributes in determining the final rating, we perform a linear regression analysis using attribute ratings as predictors and the final rating as the outcome variable, considering data from all countries combined. To account for potential confounders, the model also includes additional independent variables, specifically the average rating for the corresponding beer style and the average rating for the corresponding brewery.Also to spot and prevent multicolinearity, we examine the colinearity of beer attributes between each other and employ lasso and ridge regularizations.By comparing the coefficients of each attribute, we assess their relative influence on the final rating. To confirm the validity and effectiveness of the linear regression model, we evaluate its performance using metrics such as MSE scores, R-squared values, and p-values.To explore how the importance of these attributes varies across countries, we repeat the analysis for individual countries and also group them by geographical regions to examine the distribution of attribute coefficients between them. 
+
+Our analyses show parallel results both globally and across the countries: the most important attribute is taste followed by aroma, palate and finally appearance.The cofounding impact of brewery repuation and beer style on predicting the final rating is relatively small and not significant.The heterogeneity of the database in terms of reviewer numbers worldwide reflects significant differences in the amount of data available from different countries, making it challenging to conduct a comparative regional analysis of attribute importance.
 
 **Location-related biases in ratings**
 
@@ -63,7 +67,7 @@ Our analysis shows that there is no clear sign of a rating bias related to wheth
 
 To examine how seasonal changes influence the ratings of different beer styles, we use the time information contained in ratings to identify the season during which each rating was posted, taking into account the location of the user (Northern hemisphere, Southern hemisphere or equatorial area) to accurately determine the season. For simplicity, we only perform the analysis on users from the 10 countries with the highest number of reviews. 
 
-We then perform a linear regression analysis with the final rating as the dependent variable and key predictors, namely season, average rating for the beer style, average rating for the brewery, user’s average rating and ABV as the independent variables. We also include attribute ratings as independent variables, as previous parts of the analysis revealed that they are important predictors of beer ratings. Since, as explained thereafter, we use the model to make predictions, we need the model to have high R2 and low RMSE for the predictions to be accurate and interpretable. This is why we try to include all key predictors in the model. The regression coefficients for the season variable reveal whether ratings are significantly higher or lower in certain seasons after accounting for confounders. Using these coefficients, we calculate predicted ratings for each beer style in each season and visualize the results with line charts, showing seasonal trends for different beer styles. This allows us to visualize how ratings fluctuate with the seasons and how these patterns differ by beer style.
+We then perform a linear regression analysis with the final rating as the dependent variable and key predictors, namely season, average rating for the beer style, average rating for the brewery, user’s average rating and ABV as the independent variables. We also include attribute ratings as independent variables, as previous parts of the analysis revealed that they are important predictors of beer ratings. Since, as explained thereafter, we use the model to make predictions, we need the model to have high R2 and low MSE for the predictions to be accurate and interpretable. This is why we try to include all key predictors in the model. The regression coefficients for the season variable reveal whether ratings are significantly higher or lower in certain seasons after accounting for confounders. Using these coefficients, we calculate predicted ratings for each beer style in each season and visualize the results with line charts, showing seasonal trends for different beer styles. This allows us to visualize how ratings fluctuate with the seasons and how these patterns differ by beer style.
 
 Our analysis shows that while seasons appear to have a statistically significant impact on beer ratings, the effect is not significant from a practical standpoint. Most beer styles receive consistent ratings across all seasons.
 
@@ -134,25 +138,27 @@ The directory is organized in the following way:
 │
 ├── src                         <- Source code
 │   ├── data                    <- Data directory
-│   │   ├── download_files.py           <- Script to download data from Google Drive
-│   │   ├── extract_beer_advocate.py    <- Script to extract downloaded BeerAdvocate data
-│   │   └── extract_rate_beer.py        <- Script to extract downloaded RateBeer data 
+│   │   ├── data_loading_and_cleaning.py      <- Script to load the data, alter and clean it
+│   │   ├── download_files.py                 <- Script to download data from Google Drive
+│   │   ├── extract_beer_advocate.py          <- Script to extract downloaded BeerAdvocate data
+│   │   └── extract_rate_beer.py              <- Script to extract downloaded RateBeer data 
 │   ├── models                  <- Model directory
 │   ├── utils                   <- Utility directory
-│   │   ├── data_utils.py               <- Helper functions used in results.ipynb
-│   │   └── modules_utils.py            <- Imports required for results.ipynb
-│   ├── scripts                 <- Scripts directory
-│   │   └── review_parser.py            <- Script that processes each ratings.txt file by dividing it into parts, parsing each part, and
-│                                          saving as JSON
+│   │   ├── data_utils.py                     <- Helper functions used in results.ipynb
+│   │   └── modules_utils.py                  <- Imports required for results.ipynb
+│   ├── scripts                               <- Scripts directory
+│   │   └── review_parser.py                  <- Script that processes each ratings.txt file by dividing it into parts, parsing each part, and
+│                                                saving as JSON
 │
-├── tests                       <- Tests of any kind
+├── tests                          <- Tests of any kind
 │
 │
-├── results.ipynb               <- Notebook containing our analyses (calls helper functions from data_utils.py
+├── results.ipynb                  <- Notebook containing our analyses (calls helper functions from data_utils.py
 │                                  and imports utilities from modules_utils.py)
-│
-├── .gitignore                  <- List of files ignored by git
-├── pip_requirements.txt        <- File for installing python dependencies
+│── Data_Loading_Cleaning.ipynb    <- Notebook containing our data loading and cleaning analyses as separate file
+│ 
+├── .gitignore                     <- List of files ignored by git
+├── pip_requirements.txt           <- File for installing python dependencies
 └── README.md
 ```
 
