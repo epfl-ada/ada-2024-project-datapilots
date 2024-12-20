@@ -408,6 +408,9 @@ We can see that there are indeed some users missing the location information. Le
 
 """
 
+ba_users_loc_filtered = ba_users_loc_filtered[ba_users_loc_filtered['location'] != 'nan']
+rb_users_loc_filtered = rb_users_loc_filtered[rb_users_loc_filtered['location'] != 'nan']
+
 # Filtering out users and reviews written by users from countries with too few users
 
 """
